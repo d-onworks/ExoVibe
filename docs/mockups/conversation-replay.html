@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>Claude remembers — ExoVibe</title>
@@ -13,7 +13,6 @@
   }
   .wrap { max-width: 920px; margin: 0 auto; }
 
-  /* 데이 1 패널 */
   .session {
     background: #0f172a; border: 1px solid #1e293b; border-radius: 12px;
     margin-bottom: 24px; overflow: hidden;
@@ -26,7 +25,6 @@
   .session-header .pid { color: #60a5fa; font-weight: 600; }
   .body { padding: 20px 24px; font-size: 14px; line-height: 1.7; }
 
-  /* 메시지 */
   .msg { margin: 14px 0; display: flex; gap: 12px; align-items: flex-start; }
   .msg .who {
     font-weight: 700; font-size: 11px; text-transform: uppercase;
@@ -84,15 +82,15 @@
     <div class="body">
       <div class="msg">
         <div class="who user">YOU</div>
-        <div class="text">React 컴포넌트가 무한 루프 도는데 왜인지 모르겠어. <code>useEffect</code> 안에서 데이터 fetch 하고 있어.</div>
+        <div class="text">My React component is in an infinite loop and I have no idea why. I'm fetching data inside <code>useEffect</code>.</div>
       </div>
       <div class="msg">
         <div class="who claude">CLAUDE</div>
-        <div class="text">deps에 객체 리터럴을 넣고 있네요. 매 렌더마다 새 참조라 effect가 재실행됩니다. <code>useMemo</code>로 감싸거나 primitive 값으로 풀어주세요.</div>
+        <div class="text">You're passing an object literal in deps. Every render creates a new reference, so the effect re-runs forever. Wrap it in <code>useMemo</code> or destructure to primitive values.</div>
       </div>
       <div class="msg">
         <div class="who user">YOU</div>
-        <div class="text">아 진짜네. 고쳐졌어. <code>#wiki</code> 로 저장.</div>
+        <div class="text">Oh wow, that fixed it. Saving with <code>#wiki</code>.</div>
       </div>
       <div class="msg">
         <div class="who exo">EXOVIBE</div>
@@ -106,7 +104,7 @@
 
   <div class="arrow">
     ↓
-    <span class="label">3주 후, 다른 프로젝트</span>
+    <span class="label">3 weeks later, different project</span>
   </div>
 
   <!-- DAY 21 -->
@@ -114,7 +112,7 @@
   <div class="session">
     <div class="session-header">
       <span>ExoVibe Session · cwd <span class="pid">~/projects/dashboard-v2</span></span>
-      <span>effort: mid · SessionStart 훅 활성</span>
+      <span>effort: mid · SessionStart hook active</span>
     </div>
     <div class="body">
       <div class="msg">
@@ -122,29 +120,29 @@
         <div class="text">
           <span style="color:#94a3b8">[ExoVibe] Knowledge index loaded · 2 relevant lessons injected</span>
           <div class="quote">
-            <div class="meta">📖 antipatterns/react-useeffect-infinite-loop.md (저장: 3주 전)</div>
-            useEffect deps에 새 객체 리터럴 → 무한 루프. useMemo 또는 primitive 분해로 해결.
+            <div class="meta">📖 antipatterns/react-useeffect-infinite-loop.md (saved 3 weeks ago)</div>
+            Object literal in useEffect deps → infinite loop. Fix: wrap in useMemo or destructure to primitives.
           </div>
         </div>
       </div>
       <div class="msg">
         <div class="who user">YOU</div>
-        <div class="text">대시보드 차트가 계속 깜빡거려. 무한 리렌더 같은데...</div>
+        <div class="text">My dashboard chart keeps flickering. Looks like an infinite re-render...</div>
       </div>
       <div class="msg">
         <div class="who claude">CLAUDE</div>
         <div class="text">
-          <strong style="color:#fbbf24">전에 저장하신 패턴이네요.</strong>
-          <code>ChartContainer.tsx:42</code> 에서 useEffect deps에 <code>{ width, height }</code> 객체를 새로 만들고 있습니다 — 3주 전 web-app 프로젝트에서 막혔던 같은 함정이에요.
-          이번엔 useMemo 적용해드릴게요. <span style="color:#94a3b8">// 같은 실수 두 번 안 합니다</span>
+          <strong style="color:#fbbf24">This is the pattern you saved before.</strong>
+          In <code>ChartContainer.tsx:42</code> you're creating a new <code>{ width, height }</code> object inside useEffect deps — the same trap that blocked you 3 weeks ago in <code>web-app</code>.
+          Applying <code>useMemo</code> this time. <span style="color:#94a3b8">// not making the same mistake twice</span>
         </div>
       </div>
     </div>
   </div>
 
   <div class="punch">
-    <strong>당신은 그 실수를 잊었지만, Claude는 안 잊었습니다.</strong><br>
-    매 세션마다 <span class="hl">자동으로 더 똑똑해지는 Claude</span> — API 키도, 외부 DB도, 별도 설정도 없이.
+    <strong>You forgot. Claude didn't.</strong><br>
+    Every session, Claude gets a little smarter — <span class="hl">automatically</span>. No API keys. No external DB. No config.
   </div>
 
 </div>
