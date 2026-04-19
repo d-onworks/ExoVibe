@@ -2,7 +2,7 @@
 name: exovibe-ingest
 description: Archive a lesson from the current or recent session into the ExoVibe knowledge base. Use when the user writes `#wiki` / `!save` / `!archive`, when an error loop is detected (same error 3 times), or on PreCompact. Reads raw transcripts from ~/.claude/exovibe/raw/, merges with existing wiki pages, updates index.md.
 context: fork
-agent: Explore
+agent: general-purpose
 allowed-tools: Read Write Edit Glob Grep Bash(node *) Bash(cat *)
 ---
 
