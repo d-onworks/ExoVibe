@@ -41,6 +41,17 @@ after a few weeks of normal coding**. Each session adds nodes. Each `#wiki` tag 
 weight. Each detected error loop draws a new edge. The brain literally grows under
 your hands without you doing anything.
 
+### Click [3D] to see your brain spin
+
+![3D rotation of the knowledge graph](docs/images/dashboard-3d.png)
+
+Click `3D` in the top-right and **drag to rotate** your knowledge in real space.
+Wheel to zoom. Click `2D` to flatten back and grab nodes to rearrange them.
+
+It's the same data — just different angles to see it from. **Zero dependencies, zero
+CDN, zero WebGL libraries.** ~200 lines of vanilla JavaScript baked into the single
+HTML file. Works offline. Works in any browser made this decade.
+
 Open it three ways depending on what you want:
 
 | Command | Opens | Install needed |

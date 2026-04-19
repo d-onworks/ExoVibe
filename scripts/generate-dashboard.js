@@ -297,14 +297,44 @@ function renderHtml(data) {
   }
   .graph-wrap {
     background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-    padding: 0; height: 480px; position: relative; overflow: hidden;
+    padding: 0; height: 540px; position: relative; overflow: hidden;
   }
-  .graph-wrap svg { width: 100%; height: 100%; display: block; }
+  .graph-wrap svg {
+    width: 100%; height: 100%; display: block;
+    cursor: grab; user-select: none; touch-action: none;
+  }
+  .graph-wrap svg.dragging { cursor: grabbing; }
+  .graph-wrap svg.rotating { cursor: move; }
   .graph-fallback {
     position: absolute; inset: 0; padding: 16px; overflow: auto;
     font-size: 12px; color: var(--muted); display: none;
   }
   .graph-wrap.no-graph .graph-fallback { display: block; }
+  .graph-controls {
+    position: absolute; top: 12px; right: 12px;
+    display: flex; gap: 6px; z-index: 10;
+    background: rgba(15,23,42,0.85); padding: 6px;
+    border: 1px solid var(--border); border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+  .graph-controls button {
+    background: transparent; color: var(--muted);
+    border: 1px solid transparent; padding: 6px 12px;
+    border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    font-family: inherit; letter-spacing: 0.04em;
+  }
+  .graph-controls button:hover { color: var(--text); border-color: var(--border); }
+  .graph-controls button.active {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .graph-help {
+    position: absolute; bottom: 12px; left: 12px;
+    font-size: 11px; color: var(--muted);
+    background: rgba(15,23,42,0.7); padding: 6px 10px;
+    border-radius: 6px; pointer-events: none;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+  }
   .legend { display: flex; gap: 16px; font-size: 11px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
   .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
   .empty { color: var(--muted); font-style: italic; padding: 12px 0; }
@@ -355,7 +385,13 @@ function renderHtml(data) {
   <section>
     <h2>Knowledge Graph</h2>
     <div class="graph-wrap ${nodes.length === 0 ? 'no-graph' : ''}" id="graph">
+      <div class="graph-controls">
+        <button id="mode-2d" class="active" type="button">2D</button>
+        <button id="mode-3d" type="button">3D</button>
+        <button id="reset-view" type="button" title="초기 뷰로 복귀">⟳</button>
+      </div>
       <svg id="graph-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="graph-help" id="graph-help">드래그: 노드/뷰 이동 · 휠: 줌 · 3D 모드에서 드래그: 회전</div>
       <div class="graph-fallback">
         ${nodes.length === 0
           ? '아직 아카이브된 페이지가 없습니다. 대화 중 <code>#wiki</code> 태그로 첫 레슨을 저장해보세요.'
@@ -424,14 +460,15 @@ function renderHtml(data) {
 
 <script>
 (function() {
-  // Obsidian-스타일 force layout — 슬러그 라벨, degree 크기, 태그 클러스터링
+  // Interactive 3D-capable Knowledge Graph — 의존성 0 vanilla JS
   const nodes = ${JSON.stringify(nodes)};
   const edges = ${JSON.stringify(edges)};
   const svg = document.getElementById('graph-svg');
   if (!nodes.length) return;
 
+  const NS = 'http://www.w3.org/2000/svg';
   const W = svg.clientWidth || 1100;
-  const H = 480;
+  const H = 540;
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
 
   // 노드 반경: 5 + sqrt(degree) * 4 → 1연결=9px, 4연결=13px, 9연결=17px
@@ -440,9 +477,10 @@ function renderHtml(data) {
     n.isHub = n.degree >= 2;  // 허브 노드만 라벨 진하게
   }
 
-  // 카테고리별 + 첫 태그별 시드 위치 — 같은 그룹은 가까운 곳에서 출발
+  // 카테고리별 시드 + z축 깊이 분산 (3D 모드용)
   const cats = [...new Set(nodes.map(n => n.category))];
   const catAngle = Object.fromEntries(cats.map((c, i) => [c, (i / cats.length) * Math.PI * 2]));
+  const catZ = Object.fromEntries(cats.map((c, i) => [c, (i - cats.length/2) * 60]));
   nodes.forEach((n, i) => {
     const baseA = catAngle[n.category];
     const offset = ((i % 7) - 3) * 0.08;
@@ -450,7 +488,8 @@ function renderHtml(data) {
     const radius = Math.min(W, H) * 0.32;
     n.x = W/2 + Math.cos(a) * radius + (Math.random()-0.5)*20;
     n.y = H/2 + Math.sin(a) * radius + (Math.random()-0.5)*20;
-    n.vx = 0; n.vy = 0;
+    n.z = catZ[n.category] + (Math.random()-0.5)*70;
+    n.vx = 0; n.vy = 0; n.vz = 0;
   });
   const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
 
@@ -463,104 +502,236 @@ function renderHtml(data) {
     }
   }
 
-  // Force simulation
-  const STEPS = 350;
+  // Force simulation — 3D (x, y, z)
+  const STEPS = 320;
   for (let step = 0; step < STEPS; step++) {
-    const cooling = 1 - step / STEPS;  // 점차 안정
-    // 반발 (노드 크기 고려)
+    const cooling = 1 - step / STEPS;
     for (const n of nodes) {
-      let fx = 0, fy = 0;
+      let fx = 0, fy = 0, fz = 0;
       for (const m of nodes) {
         if (m === n) continue;
-        const dx = n.x - m.x, dy = n.y - m.y;
-        const d2 = dx*dx + dy*dy + 1;
-        const minDist = (n.r + m.r) * 1.6;
-        const f = 4500 / d2 + (d2 < minDist*minDist ? 800/Math.sqrt(d2) : 0);
+        const dx = n.x - m.x, dy = n.y - m.y, dz = n.z - m.z;
+        const d2 = dx*dx + dy*dy + dz*dz + 1;
+        const f = 4800 / d2;
         const d = Math.sqrt(d2);
         fx += (dx/d) * f;
         fy += (dy/d) * f;
+        fz += (dz/d) * f * 0.3;  // z축은 약한 반발
       }
-      // 중심 약한 인력
       fx += (W/2 - n.x) * 0.004;
       fy += (H/2 - n.y) * 0.004;
+      fz += (0 - n.z) * 0.003;
       n.vx = (n.vx + fx * 0.5) * 0.6;
       n.vy = (n.vy + fy * 0.5) * 0.6;
+      n.vz = (n.vz + fz * 0.5) * 0.6;
     }
-    // 링크 인력 (위키링크는 강하게)
     for (const e of edges) {
       const s = byId[e.source], t = byId[e.target];
       if (!s || !t) continue;
-      const dx = t.x - s.x, dy = t.y - s.y;
-      const d = Math.sqrt(dx*dx + dy*dy) || 1;
-      const target = 110;
-      const k = (d - target) * 0.06;
-      s.vx += dx/d * k; s.vy += dy/d * k;
-      t.vx -= dx/d * k; t.vy -= dy/d * k;
+      const dx = t.x - s.x, dy = t.y - s.y, dz = t.z - s.z;
+      const d = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
+      const k = (d - 110) * 0.06;
+      s.vx += dx/d * k; s.vy += dy/d * k; s.vz += dz/d * k * 0.4;
+      t.vx -= dx/d * k; t.vy -= dy/d * k; t.vz -= dz/d * k * 0.4;
     }
-    // 태그 공유 인력 (약하게, stack별 클러스터 형성)
     for (const p of tagPairs) {
-      const dx = p.b.x - p.a.x, dy = p.b.y - p.a.y;
-      const d = Math.sqrt(dx*dx + dy*dy) || 1;
-      const target = 90;
-      const k = (d - target) * 0.012 * p.strength;
-      p.a.vx += dx/d * k; p.a.vy += dy/d * k;
-      p.b.vx -= dx/d * k; p.b.vy -= dy/d * k;
+      const dx = p.b.x - p.a.x, dy = p.b.y - p.a.y, dz = p.b.z - p.a.z;
+      const d = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
+      const k = (d - 90) * 0.012 * p.strength;
+      p.a.vx += dx/d * k; p.a.vy += dy/d * k; p.a.vz += dz/d * k * 0.3;
+      p.b.vx -= dx/d * k; p.b.vy -= dy/d * k; p.b.vz -= dz/d * k * 0.3;
     }
     for (const n of nodes) {
       n.x += n.vx * cooling;
       n.y += n.vy * cooling;
-      n.x = Math.max(n.r + 8, Math.min(W - n.r - 8, n.x));
-      n.y = Math.max(n.r + 8, Math.min(H - n.r - 8, n.y));
+      n.z += n.vz * cooling;
     }
   }
 
-  // 렌더
-  const NS = 'http://www.w3.org/2000/svg';
+  // ===== 뷰 상태 (인터랙션) =====
+  const view = {
+    mode: '2d',
+    yaw: 0, pitch: 0,
+    zoom: 1, panX: 0, panY: 0,
+    drag: null,
+  };
 
-  // 1) 엣지 먼저 (뒤에 깔리도록)
-  const gEdges = document.createElementNS(NS, 'g');
-  for (const e of edges) {
-    const s = byId[e.source], t = byId[e.target];
-    if (!s || !t) continue;
-    const line = document.createElementNS(NS, 'line');
-    line.setAttribute('x1', s.x.toFixed(1)); line.setAttribute('y1', s.y.toFixed(1));
-    line.setAttribute('x2', t.x.toFixed(1)); line.setAttribute('y2', t.y.toFixed(1));
-    line.setAttribute('stroke', '#475569');
-    line.setAttribute('stroke-width', '1');
-    line.setAttribute('opacity', '0.5');
-    gEdges.appendChild(line);
+  function project(n) {
+    if (view.mode === '2d') {
+      return {
+        x: (n.x - W/2) * view.zoom + W/2 + view.panX,
+        y: (n.y - H/2) * view.zoom + H/2 + view.panY,
+        scale: view.zoom,
+        depth: 0,
+      };
+    }
+    // 3D: yaw(Y축) + pitch(X축) 회전 → 원근 투영
+    const cx = n.x - W/2, cy = n.y - H/2, cz = n.z;
+    const cosY = Math.cos(view.yaw), sinY = Math.sin(view.yaw);
+    const cosP = Math.cos(view.pitch), sinP = Math.sin(view.pitch);
+    const x1 = cx*cosY + cz*sinY;
+    const z1 = -cx*sinY + cz*cosY;
+    const y2 = cy*cosP - z1*sinP;
+    const z2 = cy*sinP + z1*cosP;
+    const f = 700, camZ = 600;
+    const zEff = z2 + camZ;
+    const scale = (f / zEff) * view.zoom;
+    return {
+      x: x1 * scale + W/2 + view.panX,
+      y: y2 * scale + H/2 + view.panY,
+      scale,
+      depth: zEff,
+    };
   }
-  svg.appendChild(gEdges);
 
-  // 2) 노드
-  for (const n of nodes) {
-    const g = document.createElementNS(NS, 'g');
-    g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')');
+  function render() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const proj = nodes.map(n => ({ n, p: project(n) }));
+    if (view.mode === '3d') proj.sort((a, b) => b.p.depth - a.p.depth);
 
-    // SVG title = 브라우저 네이티브 툴팁 (호버 풀 제목)
-    const title = document.createElementNS(NS, 'title');
-    const tagPart = n.tags.length ? ' [' + n.tags.slice(0, 3).join(', ') + ']' : '';
-    title.textContent = n.fullTitle + tagPart + ' (' + n.degree + ' links)';
-    g.appendChild(title);
+    // 엣지
+    const gEdges = document.createElementNS(NS, 'g');
+    for (const e of edges) {
+      const s = byId[e.source], t = byId[e.target];
+      if (!s || !t) continue;
+      const ps = project(s), pt = project(t);
+      const avgDepth = (ps.depth + pt.depth) / 2;
+      const opacity = view.mode === '3d' ? Math.max(0.12, 0.7 - avgDepth/2200) : 0.5;
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', ps.x.toFixed(1));
+      line.setAttribute('y1', ps.y.toFixed(1));
+      line.setAttribute('x2', pt.x.toFixed(1));
+      line.setAttribute('y2', pt.y.toFixed(1));
+      line.setAttribute('stroke', '#475569');
+      line.setAttribute('stroke-width', '1');
+      line.setAttribute('opacity', opacity.toFixed(2));
+      gEdges.appendChild(line);
+    }
+    svg.appendChild(gEdges);
 
-    const c = document.createElementNS(NS, 'circle');
-    c.setAttribute('r', n.r.toFixed(1));
-    c.setAttribute('fill', n.color);
-    c.setAttribute('stroke', '#0f172a');
-    c.setAttribute('stroke-width', '2');
-    g.appendChild(c);
+    // 노드
+    for (const { n, p } of proj) {
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')');
+      g.setAttribute('data-id', n.id);
 
-    // 라벨: 슬러그 (허브만 진하게, 리프는 흐릿)
-    const txt = document.createElementNS(NS, 'text');
-    txt.setAttribute('x', (n.r + 4).toFixed(1));
-    txt.setAttribute('y', '3');
-    txt.setAttribute('class', 'node-label' + (n.isHub ? ' hub' : ''));
-    const lbl = n.label.length > 28 ? n.label.slice(0, 26) + '…' : n.label;
-    txt.textContent = lbl;
-    g.appendChild(txt);
+      const title = document.createElementNS(NS, 'title');
+      const tagPart = n.tags.length ? ' [' + n.tags.slice(0, 3).join(', ') + ']' : '';
+      title.textContent = n.fullTitle + tagPart + ' (' + n.degree + ' links)';
+      g.appendChild(title);
 
-    svg.appendChild(g);
+      const r = n.r * Math.max(0.4, p.scale);
+      const opacity = view.mode === '3d' ? Math.max(0.35, 1 - p.depth/1900) : 1;
+
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('r', r.toFixed(1));
+      c.setAttribute('fill', n.color);
+      c.setAttribute('stroke', '#0f172a');
+      c.setAttribute('stroke-width', '2');
+      c.setAttribute('opacity', opacity.toFixed(2));
+      g.appendChild(c);
+
+      const showLabel = view.mode === '2d' || (n.isHub && p.depth < 950);
+      if (showLabel) {
+        const txt = document.createElementNS(NS, 'text');
+        txt.setAttribute('x', (r + 4).toFixed(1));
+        txt.setAttribute('y', '3');
+        txt.setAttribute('class', 'node-label' + (n.isHub ? ' hub' : ''));
+        txt.setAttribute('opacity', opacity.toFixed(2));
+        const lbl = n.label.length > 28 ? n.label.slice(0, 26) + '…' : n.label;
+        txt.textContent = lbl;
+        g.appendChild(txt);
+      }
+      svg.appendChild(g);
+    }
   }
+
+  // ===== 마우스 인터랙션 =====
+  function svgCoords(e) {
+    const rect = svg.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (W / rect.width),
+      y: (e.clientY - rect.top) * (H / rect.height),
+    };
+  }
+  function nodeAt(mx, my) {
+    if (view.mode !== '2d') return null;
+    for (const n of nodes) {
+      const p = project(n);
+      const dx = mx - p.x, dy = my - p.y;
+      const rr = n.r * p.scale + 4;
+      if (dx*dx + dy*dy <= rr*rr) return n;
+    }
+    return null;
+  }
+
+  svg.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const m = svgCoords(e);
+    const hit = nodeAt(m.x, m.y);
+    if (hit && view.mode === '2d') {
+      view.drag = { type: 'node', target: hit, lastX: m.x, lastY: m.y };
+      svg.classList.add('dragging');
+    } else if (view.mode === '3d') {
+      view.drag = { type: 'rotate', lastX: e.clientX, lastY: e.clientY };
+      svg.classList.add('rotating');
+    } else {
+      view.drag = { type: 'pan', lastX: e.clientX, lastY: e.clientY };
+      svg.classList.add('dragging');
+    }
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!view.drag) return;
+    if (view.drag.type === 'node') {
+      const m = svgCoords(e);
+      view.drag.target.x += (m.x - view.drag.lastX) / view.zoom;
+      view.drag.target.y += (m.y - view.drag.lastY) / view.zoom;
+      view.drag.lastX = m.x; view.drag.lastY = m.y;
+    } else if (view.drag.type === 'pan') {
+      view.panX += e.clientX - view.drag.lastX;
+      view.panY += e.clientY - view.drag.lastY;
+      view.drag.lastX = e.clientX; view.drag.lastY = e.clientY;
+    } else if (view.drag.type === 'rotate') {
+      view.yaw += (e.clientX - view.drag.lastX) * 0.01;
+      view.pitch += (e.clientY - view.drag.lastY) * 0.01;
+      view.pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, view.pitch));
+      view.drag.lastX = e.clientX; view.drag.lastY = e.clientY;
+    }
+    render();
+  });
+  window.addEventListener('mouseup', () => {
+    view.drag = null;
+    svg.classList.remove('dragging', 'rotating');
+  });
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+    view.zoom = Math.max(0.3, Math.min(4, view.zoom * factor));
+    render();
+  }, { passive: false });
+
+  // ===== 모드 토글 =====
+  const btn2d = document.getElementById('mode-2d');
+  const btn3d = document.getElementById('mode-3d');
+  const btnReset = document.getElementById('reset-view');
+  const help = document.getElementById('graph-help');
+  function setMode(m) {
+    view.mode = m;
+    btn2d.classList.toggle('active', m === '2d');
+    btn3d.classList.toggle('active', m === '3d');
+    help.textContent = m === '2d'
+      ? '드래그: 노드 이동 · 빈 영역: 팬 · 휠: 줌'
+      : '드래그: 회전 · 휠: 줌 · 2D에서 노드 이동 가능';
+    render();
+  }
+  btn2d.addEventListener('click', () => setMode('2d'));
+  btn3d.addEventListener('click', () => setMode('3d'));
+  btnReset.addEventListener('click', () => {
+    view.zoom = 1; view.panX = 0; view.panY = 0; view.yaw = 0; view.pitch = 0;
+    render();
+  });
+
+  render();
 })();
 </script>
 </body>
