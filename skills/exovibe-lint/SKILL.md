@@ -3,7 +3,7 @@ name: exovibe-lint
 description: Health-check the ExoVibe knowledge base. Detects orphan pages, dead Wikilinks, contradictory claims, stale entries, and index drift. Produces an HTML dashboard. Run manually or weekly.
 context: fork
 agent: general-purpose
-allowed-tools: Read Write Glob Grep Bash(rg *) Bash(ls *) Bash(date *)
+allowed-tools: Read Write Glob Grep Bash(rg *) Bash(ls *) Bash(date *) Bash(node *)
 ---
 
 # ExoVibe Lint Skill
@@ -49,14 +49,19 @@ Write a detailed report to `~/.claude/exovibe/lint-report.md` with each flagged 
 
 ## Step 4 — Generate Dashboard HTML
 
-Write a single-file HTML to `~/.claude/exovibe/dashboard.html`:
+대시보드는 **LLM이 아닌 독립 Node 스크립트**가 생성한다 (결정론적, 빠름, 토큰 소모 0):
 
-- Header stats cards: total pages, patterns, antipatterns, error loops caught, hallucinations blocked
-- Last 10 log entries
-- Lint findings summary
-- Stack decision graph (optional, D3.js from CDN)
+```bash
+node scripts/generate-dashboard.js
+```
 
-Keep it self-contained — no build step, no npm install. vanilla HTML + inline CSS + D3.js CDN.
+결과: `~/.claude/exovibe/dashboard.html` 단일 HTML 파일.
+- 의존성 0 (Node 표준 라이브러리만, CDN 없음)
+- 인라인 force layout 그래프 (~60줄 vanilla JS)
+- 다크 테마, 카테고리별 색상
+- 오프라인 동작
+
+Lint 스킬은 이 커맨드만 실행하면 되고, HTML 직접 작성은 하지 않는다.
 
 ## Step 5 — Suggest Actions
 

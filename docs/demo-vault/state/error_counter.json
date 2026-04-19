@@ -1,0 +1,25 @@
+{
+  "f2a1b3c4d5e6": {
+    "count": 3,
+    "first_seen": 1776157200000,
+    "last_seen": 1776163222000,
+    "sessions": [
+      "session-abc111",
+      "session-abc111",
+      "session-abc111"
+    ],
+    "sample": "TypeError: Cannot read property 'map' of undefined",
+    "ingested": true
+  },
+  "a1b2c3d4e5f6": {
+    "count": 2,
+    "first_seen": 1776499200000,
+    "last_seen": 1776502800000,
+    "sessions": [
+      "session-abc114",
+      "session-abc114"
+    ],
+    "sample": "npm ERR! 404 Not Found - react-query-sync",
+    "ingested": false
+  }
+}

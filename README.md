@@ -8,6 +8,28 @@ Built for AI-native vibe coders who ship fast but keep hitting the same walls: h
 
 ---
 
+## See it in action
+
+![ExoVibe Dashboard](docs/images/dashboard-hero.png)
+
+> Your second brain, rendered as a living graph. Above: 12 lessons archived across
+> patterns, antipatterns, stack decisions, structure lessons, and blocked hallucinations.
+> One command opens it: `/exovibe-view`.
+
+Open it three ways depending on what you want:
+
+| Command | Opens | Install needed |
+|---------|-------|----------------|
+| `/exovibe-view` *(or `dashboard`)* | Single-file HTML dashboard in your browser | None |
+| `/exovibe-view vault` | `~/.claude/exovibe/` as an Obsidian Vault | [Obsidian](https://obsidian.md) (free) |
+| `/exovibe-view graph` | Obsidian + graph view focus | Obsidian |
+
+The dashboard regenerates on every call — always fresh, deterministic, and **offline**
+(no CDN, no network). The Vault preset (dark theme, category-colored graph) installs
+itself the first time you open `vault` mode.
+
+---
+
 ## Install
 
 ```bash
@@ -155,11 +177,16 @@ Use a **private** repo. Your lessons are personal.
 
 ## Obsidian Compatible
 
-Open `~/.claude/exovibe/` as an Obsidian Vault and you get:
-- Graph view (your knowledge as a network)
-- Backlinks
-- Full-text search
-- Community plugins (Smart Connections, Neural Composer, etc.)
+The fastest path: run `/exovibe-view vault` — ExoVibe will scaffold a
+dark-themed `.obsidian/` preset (category-colored graph groups, wikilinks
+enabled, preview mode) and launch Obsidian via URI scheme. Already
+customized your vault? ExoVibe never overwrites existing configs.
+
+What you get out of the box:
+- Graph view with category colors matching the dashboard
+- Backlinks + outgoing links pane
+- Full-text search across the whole brain
+- Community plugins (Smart Connections, Dataview, etc.) remain yours to enable
 
 Not affiliated with Obsidian. We just happen to speak the same format.
 

@@ -1,7 +1,8 @@
 ---
 name: exovibe-config
 description: View or change ExoVibe's parsing effort level (low / mid / high). Use when the user asks to adjust how aggressively ExoVibe detects patterns, or reports too much/too little noise from ExoVibe notifications. Writes ~/.claude/exovibe/config.json.
-disable-model-invocation: false
+context: fork
+agent: general-purpose
 allowed-tools: Read Write Edit Bash(node *)
 argument-hint: [effort low|mid|high] OR [show]
 ---
