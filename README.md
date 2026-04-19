@@ -1,20 +1,45 @@
 # ExoVibe
 
-> The Cognitive Exoskeleton for Vibe Coders — Claude-native. Zero API keys. Zero external DBs. Just markdown that compounds.
+> **The Cognitive Exoskeleton for Vibe Coders.**
+> Every Claude Code session you ship makes the *next* one smarter. Automatically.
+> Claude-native. Zero API keys. Zero external DBs. Just markdown that compounds.
 
-**ExoVibe** turns every Claude Code session into permanent, structured knowledge — then automatically injects relevant lessons into your *next* session so you never repeat the same mistake twice.
+**ExoVibe** is a Claude Code plugin that captures every meaningful lesson from your
+coding sessions as plain markdown, then auto-injects the relevant ones into your next
+session — so Claude *already knows* you've hit this bug before, before you even ask.
 
-Built for AI-native vibe coders who ship fast but keep hitting the same walls: hallucinated packages, mixed libraries, 500-line files, silent error swallowing.
+Built for AI-native vibe coders who ship fast but keep tripping on the same walls:
+hallucinated packages, mixed libraries, 500-line files, silent error-swallowing,
+the React useEffect infinite loop you swear you fixed last month.
 
 ---
 
-## See it in action
+## The pitch in one image
 
-![ExoVibe Dashboard](docs/images/dashboard-hero.png)
+![Day 1 you save a lesson. Day 21 Claude recalls it for you.](docs/images/claude-remembers.png)
 
-> Your second brain, rendered as a living graph. Above: 12 lessons archived across
-> patterns, antipatterns, stack decisions, structure lessons, and blocked hallucinations.
-> One command opens it: `/exovibe-view`.
+> **You forget. Claude doesn't.**
+> Type `#wiki` once → 3 weeks later in a *different project*, Claude pulls the same
+> lesson into context automatically and warns you before you repeat the mistake.
+
+That's the whole product. Everything else is plumbing to make this feel inevitable.
+
+---
+
+## See your brain grow
+
+![ExoVibe Dashboard — your second brain rendered as a graph](docs/images/dashboard-hero.png)
+
+> 12 lessons. 5 categories. 16 stack tags. One command: `/exovibe-view`.
+>
+> Bigger nodes = lessons other lessons reference (your "core wisdom").
+> Edges = wikilinks Claude wrote between related ideas. Colors = category.
+> The cloud below = every tech stack you've ever touched, sorted by depth.
+
+This dashboard isn't seeded for the demo — **it's what your wiki actually looks like
+after a few weeks of normal coding**. Each session adds nodes. Each `#wiki` tag adds
+weight. Each detected error loop draws a new edge. The brain literally grows under
+your hands without you doing anything.
 
 Open it three ways depending on what you want:
 
@@ -24,9 +49,26 @@ Open it three ways depending on what you want:
 | `/exovibe-view vault` | `~/.claude/exovibe/` as an Obsidian Vault | [Obsidian](https://obsidian.md) (free) |
 | `/exovibe-view graph` | Obsidian + graph view focus | Obsidian |
 
-The dashboard regenerates on every call — always fresh, deterministic, and **offline**
+The dashboard regenerates on every call — always fresh, deterministic, **offline**
 (no CDN, no network). The Vault preset (dark theme, category-colored graph) installs
 itself the first time you open `vault` mode.
+
+---
+
+## Why beginner vibe coders need this most
+
+If you're new to coding-with-Claude, you're trapped in a loop most of us spent years
+breaking out of:
+
+| The vibe coder loop | What ExoVibe does |
+|---------------------|-------------------|
+| Hit a weird bug → Claude solves it → ship → forget how → hit it again | Auto-archives the lesson the moment you tag it. Auto-recalls it next time. |
+| Install whatever package Claude suggests → 1 in 5 doesn't exist | Blocks hallucinated packages *before* `npm install` finishes. |
+| Copy a fix → don't understand it → it breaks → ask again | Stores both the fix *and the reason*. Future-Claude reads both. |
+| Project A taught you something. Project B doesn't know. | Cross-project, global brain. One lesson = available everywhere. |
+
+**Pros learn slowly because they trust their memory. Vibe coders learn faster because
+they let ExoVibe remember for them.**
 
 ---
 
@@ -196,6 +238,16 @@ Not affiliated with Obsidian. We just happen to speak the same format.
 
 > *"Vibe coders ship fast. ExoVibe makes sure they don't ship the same bug twice."*
 
+Three beliefs:
+1. **Memory is more valuable than intelligence.** Claude is already smart. What it
+   lacks is the *specific memory of your projects*. ExoVibe gives it that.
+2. **Plain markdown beats every database.** You can read it, edit it, grep it,
+   git it, open it in Obsidian, take it to the next tool — your knowledge isn't
+   trapped in someone's SaaS.
+3. **Compounding > consumption.** Most AI tools you use *consume* your time.
+   ExoVibe *invests* it — every conversation deposits into a brain that pays
+   you back forever.
+
 Inspired by:
 - [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — markdown that compounds
 - Claude Code's native hook system — all the plumbing already exists
@@ -220,3 +272,13 @@ MIT © 2026 d-onworks
 ## Credits
 
 Built with 100% Claude Code (Opus 4.7) by a vibe coder, for vibe coders.
+
+If ExoVibe stops you from re-living one bug you already solved last month, this
+project paid for itself. Star it, share it with another vibe coder who keeps hitting
+the same wall, and let your second brain start compounding tonight.
+
+```bash
+/plugin marketplace add d-onworks/ExoVibe
+/plugin install exovibe
+# 30 seconds. No keys. No accounts. Your brain starts now.
+```

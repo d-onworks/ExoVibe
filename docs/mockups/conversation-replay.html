@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Claude remembers — ExoVibe</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0e1a;
+    font-family: 'SF Mono', Monaco, Consolas, 'Noto Sans Mono CJK KR', monospace;
+    padding: 32px;
+    color: #e2e8f0;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  /* 데이 1 패널 */
+  .session {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 12px;
+    margin-bottom: 24px; overflow: hidden;
+  }
+  .session-header {
+    background: #1e293b; padding: 10px 16px; font-size: 12px;
+    color: #94a3b8; display: flex; justify-content: space-between;
+    border-bottom: 1px solid #334155;
+  }
+  .session-header .pid { color: #60a5fa; font-weight: 600; }
+  .body { padding: 20px 24px; font-size: 14px; line-height: 1.7; }
+
+  /* 메시지 */
+  .msg { margin: 14px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .msg .who {
+    font-weight: 700; font-size: 11px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 4px; flex-shrink: 0; min-width: 56px; text-align: center;
+    letter-spacing: 0.06em;
+  }
+  .who.user { background: #475569; color: #f1f5f9; }
+  .who.claude { background: #6366f1; color: #fff; }
+  .who.exo { background: #10b981; color: #fff; }
+  .msg .text { flex: 1; padding-top: 2px; }
+  .msg .text code {
+    background: #1e293b; padding: 1px 6px; border-radius: 3px;
+    font-size: 13px; color: #fbbf24;
+  }
+  .msg .text .quote {
+    margin: 8px 0; padding: 10px 14px; border-left: 3px solid #10b981;
+    background: rgba(16,185,129,0.06); border-radius: 0 6px 6px 0;
+    color: #cbd5e1; font-size: 13px;
+  }
+  .msg .text .quote .meta {
+    font-size: 11px; color: #94a3b8; margin-bottom: 4px;
+  }
+  .arrow {
+    text-align: center; font-size: 24px; color: #475569;
+    margin: -8px 0 -4px; user-select: none;
+  }
+  .arrow .label {
+    font-size: 11px; color: #64748b; display: block; margin-top: 4px;
+    font-family: 'SF Pro Display', -apple-system, sans-serif; letter-spacing: 0.04em;
+  }
+  .day-stamp {
+    display: inline-block; padding: 4px 12px; background: #fbbf24; color: #1e293b;
+    border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+  .day-stamp.later { background: #10b981; color: #052e23; }
+  .punch {
+    text-align: center; padding: 28px 16px; font-size: 16px;
+    color: #94a3b8; font-family: 'SF Pro Display', -apple-system, sans-serif;
+  }
+  .punch strong { color: #e2e8f0; font-weight: 600; }
+  .punch .hl { color: #10b981; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- DAY 1 -->
+  <div class="day-stamp">Day 1 — 2026-04-20</div>
+  <div class="session">
+    <div class="session-header">
+      <span>ExoVibe Session · cwd <span class="pid">~/projects/web-app</span></span>
+      <span>effort: mid</span>
+    </div>
+    <div class="body">
+      <div class="msg">
+        <div class="who user">YOU</div>
+        <div class="text">React 컴포넌트가 무한 루프 도는데 왜인지 모르겠어. <code>useEffect</code> 안에서 데이터 fetch 하고 있어.</div>
+      </div>
+      <div class="msg">
+        <div class="who claude">CLAUDE</div>
+        <div class="text">deps에 객체 리터럴을 넣고 있네요. 매 렌더마다 새 참조라 effect가 재실행됩니다. <code>useMemo</code>로 감싸거나 primitive 값으로 풀어주세요.</div>
+      </div>
+      <div class="msg">
+        <div class="who user">YOU</div>
+        <div class="text">아 진짜네. 고쳐졌어. <code>#wiki</code> 로 저장.</div>
+      </div>
+      <div class="msg">
+        <div class="who exo">EXOVIBE</div>
+        <div class="text">
+          <span style="color:#10b981">✓</span> Archived as
+          <code>antipatterns/react-useeffect-infinite-loop.md</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    ↓
+    <span class="label">3주 후, 다른 프로젝트</span>
+  </div>
+
+  <!-- DAY 21 -->
+  <div class="day-stamp later">Day 21 — 2026-05-11</div>
+  <div class="session">
+    <div class="session-header">
+      <span>ExoVibe Session · cwd <span class="pid">~/projects/dashboard-v2</span></span>
+      <span>effort: mid · SessionStart 훅 활성</span>
+    </div>
+    <div class="body">
+      <div class="msg">
+        <div class="who exo">EXOVIBE</div>
+        <div class="text">
+          <span style="color:#94a3b8">[ExoVibe] Knowledge index loaded · 2 relevant lessons injected</span>
+          <div class="quote">
+            <div class="meta">📖 antipatterns/react-useeffect-infinite-loop.md (저장: 3주 전)</div>
+            useEffect deps에 새 객체 리터럴 → 무한 루프. useMemo 또는 primitive 분해로 해결.
+          </div>
+        </div>
+      </div>
+      <div class="msg">
+        <div class="who user">YOU</div>
+        <div class="text">대시보드 차트가 계속 깜빡거려. 무한 리렌더 같은데...</div>
+      </div>
+      <div class="msg">
+        <div class="who claude">CLAUDE</div>
+        <div class="text">
+          <strong style="color:#fbbf24">전에 저장하신 패턴이네요.</strong>
+          <code>ChartContainer.tsx:42</code> 에서 useEffect deps에 <code>{ width, height }</code> 객체를 새로 만들고 있습니다 — 3주 전 web-app 프로젝트에서 막혔던 같은 함정이에요.
+          이번엔 useMemo 적용해드릴게요. <span style="color:#94a3b8">// 같은 실수 두 번 안 합니다</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="punch">
+    <strong>당신은 그 실수를 잊었지만, Claude는 안 잊었습니다.</strong><br>
+    매 세션마다 <span class="hl">자동으로 더 똑똑해지는 Claude</span> — API 키도, 외부 DB도, 별도 설정도 없이.
+  </div>
+
+</div>
+</body>
+</html>

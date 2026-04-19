@@ -129,6 +129,37 @@ function collect() {
     }
   }
 
+  // degree (in + out 링크 수) 계산 — 노드 크기 산정용
+  const slugToPage = Object.fromEntries(pages.map(p => [p.slug, p]));
+  const degree = Object.fromEntries(pages.map(p => [p.slug, 0]));
+  for (const p of pages) {
+    for (const t of p.links) {
+      if (slugToPage[t]) {
+        degree[p.slug]++;
+        degree[t]++;
+      }
+    }
+  }
+  pages.forEach(p => { p.degree = degree[p.slug] || 0; });
+
+  // 태그별 집계 (stack 클러스터링 + by-stack 패널용)
+  const tagCounts = {};
+  const tagToCategory = {};  // 태그 → 가장 흔한 카테고리 (대표 색상)
+  for (const p of pages) {
+    for (const tag of p.tags) {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      tagToCategory[tag] = tagToCategory[tag] || {};
+      tagToCategory[tag][p.category] = (tagToCategory[tag][p.category] || 0) + 1;
+    }
+  }
+  const topTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tag, n]) => {
+      const catCounts = tagToCategory[tag];
+      const dominantCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0][0];
+      return { tag, count: n, color: CATEGORY_COLORS[dominantCat] || '#64748b' };
+    });
+
   // log.md 에서 최근 엔트리 파싱
   const logRaw = safeRead(LOG_PATH);
   const logLines = logRaw.split('\n').filter(l => l.trim()).slice(-30).reverse();
@@ -154,6 +185,7 @@ function collect() {
     errorLoopsCaught,
     hallucBlocked,
     config,
+    topTags,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -170,12 +202,15 @@ function renderHtml(data) {
     { label: 'Halluc Blocked', value: data.hallucBlocked, color: CATEGORY_COLORS.hallucinated },
   ];
 
-  // 그래프용 데이터
+  // 그래프용 데이터 — 슬러그 라벨 + degree + tags 전달
   const nodes = data.pages.map(p => ({
     id: p.slug,
-    label: p.title,
+    label: p.slug,           // 짧은 슬러그를 기본 라벨로
+    fullTitle: p.title,      // 호버 툴팁용 풀 제목
     category: p.category,
     color: CATEGORY_COLORS[p.category] || '#64748b',
+    degree: p.degree || 0,
+    tags: p.tags || [],
   }));
   const slugSet = new Set(nodes.map(n => n.id));
   const edges = [];
@@ -273,6 +308,23 @@ function renderHtml(data) {
   .legend { display: flex; gap: 16px; font-size: 11px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
   .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
   .empty { color: var(--muted); font-style: italic; padding: 12px 0; }
+  .stack-cloud { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0; }
+  .stack-cloud .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    font-size: 12px; font-family: 'SF Mono', Monaco, Consolas, monospace;
+    transition: background 0.15s;
+  }
+  .stack-cloud .tag:hover { background: rgba(255,255,255,0.08); }
+  .stack-cloud .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .stack-cloud .tag .n { color: var(--muted); font-weight: 600; }
+  /* SVG 그래프 라벨 — 호버 시만 진하게 */
+  #graph-svg .node-label { fill: var(--muted); font-size: 10px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace; pointer-events: none; }
+  #graph-svg .node-label.hub { fill: var(--text); font-size: 11px; font-weight: 600; }
+  #graph-svg circle { cursor: pointer; transition: stroke-width 0.15s; }
+  #graph-svg circle:hover { stroke-width: 4 !important; }
   footer { text-align: center; color: var(--muted); font-size: 11px; padding: 24px; border-top: 1px solid var(--border); }
   footer a { color: var(--accent); text-decoration: none; }
 </style>
@@ -313,6 +365,22 @@ function renderHtml(data) {
     </div>
     <div class="legend">
       ${Object.entries(CATEGORY_COLORS).map(([k, v]) => `<span><span class="sw" style="background:${v}"></span>${esc(k)}</span>`).join('')}
+      <span style="margin-left:auto">노드 크기 ∝ 연결 수 · 호버: 풀 제목</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>By Stack</h2>
+    <div class="panel">
+      ${data.topTags.length === 0
+        ? '<div class="empty">stack 태그가 아직 없습니다.</div>'
+        : `<div class="stack-cloud">${data.topTags.map(t => `
+            <span class="tag" title="${esc(t.tag)} 관련 레슨 ${t.count}건">
+              <span class="dot" style="background:${t.color}"></span>
+              <span>${esc(t.tag)}</span>
+              <span class="n">${t.count}</span>
+            </span>`).join('')}</div>`
+      }
     </div>
   </section>
 
@@ -356,7 +424,7 @@ function renderHtml(data) {
 
 <script>
 (function() {
-  // 인라인 force layout (D3 의존성 없음, ~60줄)
+  // Obsidian-스타일 force layout — 슬러그 라벨, degree 크기, 태그 클러스터링
   const nodes = ${JSON.stringify(nodes)};
   const edges = ${JSON.stringify(edges)};
   const svg = document.getElementById('graph-svg');
@@ -366,76 +434,131 @@ function renderHtml(data) {
   const H = 480;
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
 
-  // 초기 랜덤 배치 (중심 근처)
+  // 노드 반경: 5 + sqrt(degree) * 4 → 1연결=9px, 4연결=13px, 9연결=17px
+  for (const n of nodes) {
+    n.r = 5 + Math.sqrt(n.degree) * 4;
+    n.isHub = n.degree >= 2;  // 허브 노드만 라벨 진하게
+  }
+
+  // 카테고리별 + 첫 태그별 시드 위치 — 같은 그룹은 가까운 곳에서 출발
+  const cats = [...new Set(nodes.map(n => n.category))];
+  const catAngle = Object.fromEntries(cats.map((c, i) => [c, (i / cats.length) * Math.PI * 2]));
   nodes.forEach((n, i) => {
-    const a = (i / nodes.length) * Math.PI * 2;
-    n.x = W/2 + Math.cos(a) * 150 + (Math.random()-0.5)*40;
-    n.y = H/2 + Math.sin(a) * 100 + (Math.random()-0.5)*40;
+    const baseA = catAngle[n.category];
+    const offset = ((i % 7) - 3) * 0.08;
+    const a = baseA + offset;
+    const radius = Math.min(W, H) * 0.32;
+    n.x = W/2 + Math.cos(a) * radius + (Math.random()-0.5)*20;
+    n.y = H/2 + Math.sin(a) * radius + (Math.random()-0.5)*20;
     n.vx = 0; n.vy = 0;
   });
   const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
 
-  // 간단한 force simulation (repulsion + link + center)
-  for (let step = 0; step < 200; step++) {
+  // 태그 공유 페어 미리 계산 (클러스터링 인력용)
+  const tagPairs = [];
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const shared = nodes[i].tags.filter(t => nodes[j].tags.includes(t)).length;
+      if (shared > 0) tagPairs.push({ a: nodes[i], b: nodes[j], strength: shared });
+    }
+  }
+
+  // Force simulation
+  const STEPS = 350;
+  for (let step = 0; step < STEPS; step++) {
+    const cooling = 1 - step / STEPS;  // 점차 안정
+    // 반발 (노드 크기 고려)
     for (const n of nodes) {
       let fx = 0, fy = 0;
-      // 반발력
       for (const m of nodes) {
         if (m === n) continue;
         const dx = n.x - m.x, dy = n.y - m.y;
         const d2 = dx*dx + dy*dy + 1;
-        const f = 2500 / d2;
-        fx += dx * f / Math.sqrt(d2);
-        fy += dy * f / Math.sqrt(d2);
+        const minDist = (n.r + m.r) * 1.6;
+        const f = 4500 / d2 + (d2 < minDist*minDist ? 800/Math.sqrt(d2) : 0);
+        const d = Math.sqrt(d2);
+        fx += (dx/d) * f;
+        fy += (dy/d) * f;
       }
-      // 중심 끌림
-      fx += (W/2 - n.x) * 0.008;
-      fy += (H/2 - n.y) * 0.008;
-      n.vx = (n.vx + fx) * 0.5;
-      n.vy = (n.vy + fy) * 0.5;
+      // 중심 약한 인력
+      fx += (W/2 - n.x) * 0.004;
+      fy += (H/2 - n.y) * 0.004;
+      n.vx = (n.vx + fx * 0.5) * 0.6;
+      n.vy = (n.vy + fy * 0.5) * 0.6;
     }
-    // 링크 인력
+    // 링크 인력 (위키링크는 강하게)
     for (const e of edges) {
       const s = byId[e.source], t = byId[e.target];
       if (!s || !t) continue;
       const dx = t.x - s.x, dy = t.y - s.y;
       const d = Math.sqrt(dx*dx + dy*dy) || 1;
-      const target = 120;
-      const k = (d - target) * 0.04;
+      const target = 110;
+      const k = (d - target) * 0.06;
       s.vx += dx/d * k; s.vy += dy/d * k;
       t.vx -= dx/d * k; t.vy -= dy/d * k;
     }
+    // 태그 공유 인력 (약하게, stack별 클러스터 형성)
+    for (const p of tagPairs) {
+      const dx = p.b.x - p.a.x, dy = p.b.y - p.a.y;
+      const d = Math.sqrt(dx*dx + dy*dy) || 1;
+      const target = 90;
+      const k = (d - target) * 0.012 * p.strength;
+      p.a.vx += dx/d * k; p.a.vy += dy/d * k;
+      p.b.vx -= dx/d * k; p.b.vy -= dy/d * k;
+    }
     for (const n of nodes) {
-      n.x += n.vx; n.y += n.vy;
-      n.x = Math.max(20, Math.min(W-20, n.x));
-      n.y = Math.max(20, Math.min(H-20, n.y));
+      n.x += n.vx * cooling;
+      n.y += n.vy * cooling;
+      n.x = Math.max(n.r + 8, Math.min(W - n.r - 8, n.x));
+      n.y = Math.max(n.r + 8, Math.min(H - n.r - 8, n.y));
     }
   }
 
   // 렌더
   const NS = 'http://www.w3.org/2000/svg';
+
+  // 1) 엣지 먼저 (뒤에 깔리도록)
+  const gEdges = document.createElementNS(NS, 'g');
   for (const e of edges) {
     const s = byId[e.source], t = byId[e.target];
     if (!s || !t) continue;
     const line = document.createElementNS(NS, 'line');
-    line.setAttribute('x1', s.x); line.setAttribute('y1', s.y);
-    line.setAttribute('x2', t.x); line.setAttribute('y2', t.y);
+    line.setAttribute('x1', s.x.toFixed(1)); line.setAttribute('y1', s.y.toFixed(1));
+    line.setAttribute('x2', t.x.toFixed(1)); line.setAttribute('y2', t.y.toFixed(1));
     line.setAttribute('stroke', '#475569');
     line.setAttribute('stroke-width', '1');
-    line.setAttribute('opacity', '0.6');
-    svg.appendChild(line);
+    line.setAttribute('opacity', '0.5');
+    gEdges.appendChild(line);
   }
+  svg.appendChild(gEdges);
+
+  // 2) 노드
   for (const n of nodes) {
     const g = document.createElementNS(NS, 'g');
-    g.setAttribute('transform', 'translate(' + n.x + ',' + n.y + ')');
+    g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')');
+
+    // SVG title = 브라우저 네이티브 툴팁 (호버 풀 제목)
+    const title = document.createElementNS(NS, 'title');
+    const tagPart = n.tags.length ? ' [' + n.tags.slice(0, 3).join(', ') + ']' : '';
+    title.textContent = n.fullTitle + tagPart + ' (' + n.degree + ' links)';
+    g.appendChild(title);
+
     const c = document.createElementNS(NS, 'circle');
-    c.setAttribute('r', '8'); c.setAttribute('fill', n.color);
-    c.setAttribute('stroke', '#0f172a'); c.setAttribute('stroke-width', '2');
+    c.setAttribute('r', n.r.toFixed(1));
+    c.setAttribute('fill', n.color);
+    c.setAttribute('stroke', '#0f172a');
+    c.setAttribute('stroke-width', '2');
+    g.appendChild(c);
+
+    // 라벨: 슬러그 (허브만 진하게, 리프는 흐릿)
     const txt = document.createElementNS(NS, 'text');
-    txt.setAttribute('x', '12'); txt.setAttribute('y', '4');
-    txt.setAttribute('fill', '#e2e8f0'); txt.setAttribute('font-size', '11');
-    txt.textContent = n.label.length > 32 ? n.label.slice(0, 30) + '…' : n.label;
-    g.appendChild(c); g.appendChild(txt);
+    txt.setAttribute('x', (n.r + 4).toFixed(1));
+    txt.setAttribute('y', '3');
+    txt.setAttribute('class', 'node-label' + (n.isHub ? ' hub' : ''));
+    const lbl = n.label.length > 28 ? n.label.slice(0, 26) + '…' : n.label;
+    txt.textContent = lbl;
+    g.appendChild(txt);
+
     svg.appendChild(g);
   }
 })();
