@@ -1,0 +1,45 @@
+# 로컬 테스트용 wiki (사용자 데이터는 레포에 커밋 금지)
+test-wiki/
+.exovibe-local/
+
+# 내부 기획 문서 (해커톤 제출 전 비공개)
+# 해커톤 후 docs/ARCHITECTURE.md로 정제하여 공개 예정
+prd.md
+marketing/
+
+# 로컬 exovibe 런타임 산출물 (사용자 PC의 실제 데이터)
+# ~/.claude/exovibe/ 는 홈에 있지만 혹시 레포 내부에 생성되면 차단
+exovibe-runtime/
+*.exovibe.local.json
+
+# 노드
+node_modules/
+npm-debug.log
+.pnpm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 빌드 산출물
+dist/
+build/
+*.tar.gz
+
+# 환경 / 비밀
+.env
+.env.*
+!.env.example
+
+# 임시 파일
+*.tmp
+*.log

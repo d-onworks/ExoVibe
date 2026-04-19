@@ -1,0 +1,54 @@
+{
+  "name": "exovibe",
+  "version": "0.2.0",
+  "description": "The Cognitive Exoskeleton for Vibe Coders — Claude-native knowledge archive that captures every anti-pattern and lesson as plain markdown, then auto-injects them into your next session. Zero API keys. Zero external DBs.",
+  "author": {
+    "name": "d-onworks",
+    "url": "https://github.com/d-onworks"
+  },
+  "homepage": "https://github.com/d-onworks/ExoVibe",
+  "repository": "https://github.com/d-onworks/ExoVibe",
+  "license": "MIT",
+  "keywords": [
+    "vibe-coding",
+    "memory",
+    "knowledge-base",
+    "cognitive-exoskeleton",
+    "markdown",
+    "obsidian-compatible",
+    "anti-pattern",
+    "second-brain"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js",
+        "timeout": 10
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.js",
+        "timeout": 5
+      }
+    ],
+    "PostToolUse": [
+      {
+        "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.js",
+        "timeout": 5
+      }
+    ],
+    "PreCompact": [
+      {
+        "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.js",
+        "timeout": 30
+      }
+    ],
+    "SessionEnd": [
+      {
+        "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-end.js",
+        "timeout": 30
+      }
+    ]
+  }
+}

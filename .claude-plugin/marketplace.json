@@ -1,0 +1,16 @@
+{
+  "name": "exovibe-marketplace",
+  "owner": {
+    "name": "d-onworks",
+    "url": "https://github.com/d-onworks"
+  },
+  "plugins": [
+    {
+      "name": "exovibe",
+      "source": "./",
+      "description": "The Cognitive Exoskeleton for Vibe Coders",
+      "category": "productivity",
+      "tags": ["memory", "knowledge-base", "vibe-coding"]
+    }
+  ]
+}
