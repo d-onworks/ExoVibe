@@ -163,9 +163,21 @@ Append a single line to `~/.claude/exovibe/log.md`:
 <ISO-8601> INGEST <slug> from session=<id> decision=<merge|new|skip>
 ```
 
+## Output Language Rule (applies to all user-facing text below)
+
+Read `user_language` from `~/.claude/exovibe/config.json` (already loaded in Step 1a).
+Adapt every user-facing label, heading, confirmation, and hint to that language.
+Keep structured identifiers (slugs, paths, event codes, frontmatter keys, commit
+message conventions) in English for portability and parser compatibility.
+
+Example mapping:
+- `user_language: "en"` → "Archived `<slug>` to `<category>/` (<decision>)."
+- `user_language: "ko"` → "저장됨: `<slug>` → `<category>/` (<decision>)."
+- `user_language: "ja"` → "アーカイブ済み: `<slug>` → `<category>/` (<decision>)."
+
 ## Output to User
 
-Report back in one sentence:
+Report back in one sentence, **in user_language**:
 > Archived `<slug>` to `<category>/` (<decision>). Run `/exovibe-query` next session to verify auto-injection.
 
 ## Step 8 — One-Time Sync Onboarding Hint
@@ -186,10 +198,15 @@ Decision flow:
    - If no `.git/` OR no `origin` remote, sync is not configured. Print
      the hint below.
 3. Print the hint as a single appended line (only if step 2 determined
-   sync is not yet configured):
+   sync is not yet configured), **in user_language**:
    ```
-   💡 Want these lessons on your other computers too? Run /exovibe-sync setup — it creates a private GitHub repo for you in one command.
+   en:  💡 Want these lessons on your other computers too? Run /exovibe-sync setup — it creates a private GitHub repo for you in one command.
+   ko:  💡 이 레슨들을 다른 컴퓨터에서도 쓰고 싶나요? /exovibe-sync setup 실행 — 명령 하나로 private GitHub repo 자동 생성.
+   ja:  💡 他のPCでもこのレッスンを使いますか？ /exovibe-sync setup — 一つのコマンドでprivate GitHub repoを自動作成。
+   (adapt similarly for any user_language)
    ```
+   The exact wording is guidance; preserve the emoji and the `/exovibe-sync setup`
+   command name verbatim.
 4. Regardless of whether the hint was printed, write the state file so
    this logic never runs again on this machine:
    ```json

@@ -11,6 +11,13 @@ argument-hint: [optional keyword]
 
 You are searching the user's personal knowledge base for relevant past lessons.
 
+## Output Language Rule
+
+Read `user_language` from `~/.claude/exovibe/config.json` at the start. Emit all
+user-facing text (headings, labels, synthesis prose, "nothing found" message)
+in that language. Keep slugs, file paths, category names, and frontmatter keys
+in English.
+
 ## Step 1 — Understand the Query
 
 The user's query arrives via `$ARGUMENTS` OR via the current conversation context:
@@ -37,26 +44,38 @@ Budget: **10,000 characters total**. If you exceed, prefer more pages with short
 
 ## Step 4 — Synthesize
 
-Present to the user:
+Present to the user, **in user_language**. Example skeleton (translate every
+label and prose to user_language; keep slugs/paths/category tokens in English):
 
 ```
+(en)
 ## Relevant Lessons from Your ExoVibe
 
 ### [title] (category, updated YYYY-MM-DD)
 <1-2 sentence synthesis of what this page says>
 See: ~/.claude/exovibe/wiki/<path>
 
-### [title] (...)
-...
-
 ---
 Apply any of these to the current task? If a lesson here conflicts with your instinct, check the Root Cause section before deciding.
 ```
 
+```
+(ko)
+## ExoVibe에서 찾은 관련 레슨
+
+### [title] (category, 업데이트 YYYY-MM-DD)
+<1-2 문장 요약>
+위치: ~/.claude/exovibe/wiki/<path>
+
+---
+지금 작업에 적용해볼까요? 감(感)과 충돌한다면 Root Cause 섹션을 먼저 확인하세요.
+```
+
 ## Step 5 — If Nothing Found
 
-Respond:
-> No ExoVibe entries matched "<query>". Consider adding `#wiki` to your next prompt so this pattern gets archived for future you.
+Respond **in user_language**. Examples:
+- en: `No ExoVibe entries matched "<query>". Consider adding #wiki to your next prompt so this pattern gets archived for future you.`
+- ko: `"<query>"에 매칭되는 ExoVibe 엔트리 없음. 다음 프롬프트에 #wiki 태그를 붙이면 이 패턴이 미래의 자신을 위해 아카이브됩니다.`
 
 ## Step 6 — Log (optional)
 

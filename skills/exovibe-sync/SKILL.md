@@ -11,6 +11,15 @@ argument-hint: [setup|init|push|pull|status|help]
 Cross-machine synchronization for the ExoVibe knowledge base via git.
 **User owns the remote** — no ExoVibe infrastructure, no server, no lock-in.
 
+## Output Language Rule
+
+Read `user_language` from `~/.claude/exovibe/config.json` at the start. Render
+all confirmation prompts, success messages, failure guidance, and progress
+updates in that language. Keep these in English regardless of user_language:
+git commands, remote URLs, commit messages (`"exovibe sync: N entries updated
+(ISO-date)"`), shell snippets users will copy-paste, and error code strings
+that users may search for in docs. Translate only the surrounding human prose.
+
 ## Recommended command for new users: `setup`
 
 If the user is new to git or has never synced before, guide them to

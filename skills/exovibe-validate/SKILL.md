@@ -11,6 +11,15 @@ argument-hint: <package-name> [registry]
 
 You are gatekeeping a package install. Your job: prevent the user from installing a hallucinated package that Claude (or any LLM) fabricated.
 
+## Output Language Rule
+
+Read `user_language` from `~/.claude/exovibe/config.json`. Render the
+user-facing verdict — the `BLOCKED` banner headline, reason prose, recommended
+alternatives list, and "safe to install" confirmation — in that language. Keep
+these in English: package names, registry names (`npm`, `pip`, `cargo`, `go`),
+version strings, command snippets like `npm install X`, URLs, and registry
+error messages quoted verbatim for searchability.
+
 ## Step 1 — Parse Input
 
 - `$0`: package name (e.g., `@supabase/auth-helpers-v2`)

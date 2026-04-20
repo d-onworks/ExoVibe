@@ -152,6 +152,27 @@ every language Claude supports (100+) with zero code to maintain, and your
 wiki reads exactly like a human teammate wrote it — because an AI teammate
 did, in your voice.
 
+**All skill output follows your language too** (v0.4.0): search results
+headings, config display labels, setup confirmations, and onboarding hints
+all render in `user_language`. Only structured identifiers (slugs, file
+paths, event codes, git commit messages, shell snippets you copy-paste) stay
+in English for tooling compatibility.
+
+### Proactive insight capture (High effort only, opt-in for Mid)
+
+When you say something like *"ah, so that's why..."* or *"the real cause
+is..."* — in any language — ExoVibe nudges you to archive the insight
+without you having to remember `#wiki`. Detection runs inside Claude
+(language-native), not via hardcoded regex, so Korean, Japanese, Spanish,
+and every other language work identically.
+
+Toggle per mode:
+```bash
+/exovibe-config effort high                  # insight cue ON by default
+/exovibe-config enable check_insight_cue     # opt-in for Mid users
+/exovibe-config disable check_insight_cue    # turn off if noisy
+```
+
 ---
 
 ## Architecture (30-second tour)

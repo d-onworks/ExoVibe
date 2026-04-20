@@ -10,6 +10,13 @@ allowed-tools: Read Write Glob Grep Bash(rg *) Bash(ls *) Bash(date *) Bash(node
 
 You are performing a health check on the user's ExoVibe knowledge base.
 
+## Output Language Rule
+
+Read `user_language` from `~/.claude/exovibe/config.json`. Emit the lint report
+(section headings, finding descriptions, severity labels, recommended actions)
+in that language. Keep slugs, file paths, Wikilink syntax `[[slug]]`, and
+numeric counts as-is.
+
 ## Step 1 — Inventory
 
 Glob all wiki pages:

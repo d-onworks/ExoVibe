@@ -4,12 +4,20 @@ description: View or change ExoVibe's parsing effort level (low / mid / high) or
 context: fork
 agent: general-purpose
 allowed-tools: Read Write Edit Bash(node *)
-argument-hint: [effort low|mid|high] OR [language <code>] OR [show]
+argument-hint: [effort low|mid|high] OR [language <code>] OR [enable <check>] OR [disable <check>] OR [show]
 ---
 
 # ExoVibe Config Skill
 
 You manage the ExoVibe configuration file at `~/.claude/exovibe/config.json`.
+
+## Output Language Rule
+
+Read `user_language` from `config.json` at the start. Render all user-facing
+labels, table headers, confirmation messages, and check-matrix descriptions in
+that language. Keep config keys (`effort`, `user_language`, `overrides`, check
+identifiers like `check_insight_cue`) in English — they are structured tokens
+the system parses.
 
 ## Commands
 
@@ -117,11 +125,30 @@ or the string `"auto"` (infer from recent prompts at each ingest).
 
 ## Advanced: Per-check override
 
-If the user wants to keep Mid but disable a specific check:
+Two override arrays live in `config.json`:
+- `overrides.disable_checks` — turns OFF a check that the current effort level
+  would otherwise enable
+- `overrides.enable_checks` — turns ON a check that the current effort level
+  does not enable by default (Mid users opting into a High-only check)
+
+### `disable <check>`
 ```
 /exovibe-config disable check_negative_feedback
 ```
-Append `check_negative_feedback` to `overrides.disable_checks` array.
+Append `<check>` to `overrides.disable_checks`. Remove from
+`overrides.enable_checks` if present (mutually exclusive).
+
+### `enable <check>`
+```
+/exovibe-config enable check_insight_cue
+```
+Append `<check>` to `overrides.enable_checks`. Remove from
+`overrides.disable_checks` if present. Useful for: Mid users who want
+High-only features like `check_insight_cue` (proactive insight capture)
+without switching their whole effort level.
+
+After update, confirm to the user **in user_language** with a before/after
+diff showing what changes in their sessions.
 
 ## Rules
 

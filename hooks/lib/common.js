@@ -47,7 +47,7 @@ const EFFORT_BUDGET = {
     check_same_file_edits: false,
   },
   high: {
-    max_context_chars: 6000,
+    max_context_chars: 9000,
     error_loop_threshold: 3,
     auto_ingest: true,
     check_rollback: true,

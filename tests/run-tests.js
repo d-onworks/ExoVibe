@@ -159,6 +159,111 @@ suite('session-start hook', () => {
     assert.ok(ctx.length <= 4500 + 500, 'injection exceeds budget: ' + ctx.length);
   });
 
+  // --- Insight-cue injection (v0.4.0) ---
+  // Background: effort=high + user_language set → session-start hook appends an
+  // insight-cue instruction so Claude proactively offers ingest on "aha" moments.
+  test('High effort + user_language=en: insight-cue instruction injected', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      user_language: 'en',
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'ic-001', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(ctx.includes('insight-cue watch'), 'insight-cue marker missing');
+    assert.ok(ctx.includes('language "en"'), 'user_language token missing in instruction');
+  });
+
+  test('High effort + user_language=ko: insight-cue reflects user_language', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      user_language: 'ko',
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'ic-002', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(ctx.includes('language "ko"'), 'ko token missing');
+  });
+
+  test('High effort + user_language=null: insight-cue NOT injected (wait for first ingest)', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      user_language: null,
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'ic-003', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(!ctx.includes('insight-cue watch'),
+      'insight-cue must not fire until user_language is set');
+  });
+
+  test('Mid effort default: insight-cue NOT injected (opt-in only)', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'mid',
+      user_language: 'ko',
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'ic-004', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(!ctx.includes('insight-cue watch'),
+      'Mid default must not inject insight-cue');
+  });
+
+  test('Mid effort + overrides.enable_checks=check_insight_cue: injected (opt-in)', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'mid',
+      user_language: 'ja',
+      overrides: { enable_checks: ['check_insight_cue'] },
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'ic-005', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(ctx.includes('insight-cue watch'), 'opt-in failed to inject');
+    assert.ok(ctx.includes('language "ja"'));
+  });
+
+  test('High effort + overrides.disable_checks=check_insight_cue: NOT injected', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      user_language: 'en',
+      overrides: { disable_checks: ['check_insight_cue'] },
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'ic-006', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(!ctx.includes('insight-cue watch'),
+      'explicit disable override must suppress injection');
+  });
+
+  test('High effort budget is 9000 chars (v0.4.0 bump)', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    const huge = '# Index\n' + Array(5000).fill('- [[x]] — sample entry line').join('\n');
+    fs.writeFileSync(path.join(TMP_ROOT, 'index.md'), huge);
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      user_language: 'en',
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('session-start', { session_id: 'budget-high', source: 'startup' });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(ctx.includes('budget=9000 chars'), 'High budget label missing');
+    // Wrapper + insight cue should leave ctx under ~10000 total.
+    assert.ok(ctx.length <= 10000, 'High injection well over budget: ' + ctx.length);
+  });
+
   test('Low effort: injection shrinks to <= 2000 chars', () => {
     resetTmp();
     const bigIndex = '# Index\n' + 'word '.repeat(3000);
