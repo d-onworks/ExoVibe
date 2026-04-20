@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * 데모 Vault 시드
+ * Demo Vault Seeder
  *
- * docs/demo-vault/ 디렉터리에 현실적인 레슨 10여개를 생성한다.
- * README 스크린샷 / 데모 영상용이며, 사용자의 실제 vault (~/.claude/exovibe/) 는 건드리지 않는다.
+ * Generates a realistic set of ~10 lessons under docs/demo-vault/.
+ * Used for README screenshots and demo videos; never touches the user's
+ * real vault at ~/.claude/exovibe/.
  *
- * 사용: node scripts/seed-demo-vault.js
- * 이후: node scripts/generate-dashboard.js --root docs/demo-vault
+ * Usage: node scripts/seed-demo-vault.js
+ * After: node scripts/generate-dashboard.js --root docs/demo-vault
  */
 
 const fs = require('fs');
@@ -16,100 +17,100 @@ const ROOT = path.resolve(__dirname, '..', 'docs', 'demo-vault');
 
 const LESSONS = [
   // patterns
-  { category: 'patterns', slug: 'react-server-component-boundary', title: 'Server/Client Component 경계 규칙',
+  { category: 'patterns', slug: 'react-server-component-boundary', title: 'Server/Client Component boundary rules',
     tags: ['react', 'nextjs'], links: ['nextjs-app-router-over-pages'] },
-  { category: 'patterns', slug: 'zustand-persist-middleware', title: 'Zustand persist 미들웨어 — hydration mismatch 없이',
+  { category: 'patterns', slug: 'zustand-persist-middleware', title: 'Zustand persist middleware without hydration mismatch',
     tags: ['state-management', 'react'], links: ['zustand-over-redux'] },
-  { category: 'patterns', slug: 'postgres-partial-index-soft-delete', title: 'soft-delete 테이블에는 partial index 필수',
+  { category: 'patterns', slug: 'postgres-partial-index-soft-delete', title: 'Partial index is mandatory on soft-delete tables',
     tags: ['postgres', 'performance'], links: [] },
 
   // antipatterns
-  { category: 'antipatterns', slug: 'react-useeffect-infinite-loop', title: 'useEffect deps에 새 객체 넣으면 무한 루프',
+  { category: 'antipatterns', slug: 'react-useeffect-infinite-loop', title: 'New object in useEffect deps causes an infinite loop',
     tags: ['react', 'hooks'], links: ['react-server-component-boundary'] },
-  { category: 'antipatterns', slug: 'axios-fetch-mixed', title: '같은 코드베이스에서 axios + fetch 혼용 금지',
+  { category: 'antipatterns', slug: 'axios-fetch-mixed', title: 'Never mix axios and fetch in the same codebase',
     tags: ['http', 'consistency'], links: [] },
-  { category: 'antipatterns', slug: 'catch-and-return-default', title: 'catch(e){ return 기본값 } — 에러 삼키기',
+  { category: 'antipatterns', slug: 'catch-and-return-default', title: 'catch(e){ return default } swallows errors',
     tags: ['error-handling'], links: [] },
-  { category: 'antipatterns', slug: 'mass-assignment-req-body', title: 'req.body 통째로 DB 전달 금지',
+  { category: 'antipatterns', slug: 'mass-assignment-req-body', title: 'Never pass req.body straight into the DB',
     tags: ['security', 'backend'], links: ['postgres-partial-index-soft-delete'] },
 
   // stack-decisions
-  { category: 'stack-decisions', slug: 'zustand-over-redux', title: 'Zustand를 Redux 대신 선택한 이유',
+  { category: 'stack-decisions', slug: 'zustand-over-redux', title: 'Why we chose Zustand instead of Redux',
     tags: ['state-management'], links: ['zustand-persist-middleware'] },
-  { category: 'stack-decisions', slug: 'nextjs-app-router-over-pages', title: 'Next.js App Router 선택',
+  { category: 'stack-decisions', slug: 'nextjs-app-router-over-pages', title: 'Choosing Next.js App Router',
     tags: ['nextjs'], links: ['react-server-component-boundary'] },
 
   // structure-lessons
-  { category: 'structure-lessons', slug: '500-line-component-split', title: '500줄 초과 컴포넌트는 feature별로 분리',
+  { category: 'structure-lessons', slug: '500-line-component-split', title: 'Split components over 500 lines by feature',
     tags: ['architecture', 'refactoring'], links: ['react-server-component-boundary'] },
 
   // hallucinated
-  { category: 'hallucinated', slug: 'supabase-auth-helpers-v2', title: 'Claude가 환각한 @supabase/auth-helpers v2',
+  { category: 'hallucinated', slug: 'supabase-auth-helpers-v2', title: 'Claude hallucinated @supabase/auth-helpers v2',
     tags: ['supabase', 'hallucinated'], links: [] },
-  { category: 'hallucinated', slug: 'react-query-sync', title: 'react-query-sync 패키지 존재하지 않음',
+  { category: 'hallucinated', slug: 'react-query-sync', title: 'react-query-sync package does not exist',
     tags: ['react', 'hallucinated'], links: [] },
 ];
 
 const BODY_TEMPLATES = {
   patterns: (l) => `## Context
-${l.title} — 반복 사용 가능한 성공 패턴.
+${l.title} — a reusable success pattern.
 
 ## Root Cause
-실제 서비스에서 검증된 접근법.
+An approach validated in production.
 
 ## Resolution
-코드/커맨드 예시 (생략 — 데모용).
+Code / command example (omitted — demo data).
 
 ## Avoid
-잘못된 구현 예시 (생략 — 데모용).
+Incorrect implementation example (omitted — demo data).
 `,
   antipatterns: (l) => `## Context
 ${l.title}.
 
 ## Root Cause
-같은 실수를 반복하게 되는 구조적 원인.
+The structural reason this mistake keeps recurring.
 
 ## Resolution
-올바른 대안.
+The correct alternative.
 
 ## Avoid
-이 패턴을 유발하는 트리거.
+Triggers that lead you back into this pattern.
 `,
   'stack-decisions': (l) => `## Context
-기술 선택 시점의 요구사항.
+Requirements at the time of the tech choice.
 
 ## Root Cause
-비교 대상들의 tradeoff.
+Tradeoffs between the alternatives considered.
 
 ## Resolution
 ${l.title}.
 
 ## Avoid
-이 선택이 맞지 않는 케이스.
+Cases where this choice is a poor fit.
 `,
   'structure-lessons': (l) => `## Context
-구조적 결함이 드러난 상황.
+A structural weakness surfaced as the component grew.
 
 ## Root Cause
-설계 초기의 단순화 선택이 시간이 지나 비용화.
+Early simplifications compounded into costly coupling over time.
 
 ## Resolution
-리팩토링 방향.
+Refactor by feature boundary, not by file type.
 
 ## Avoid
-같은 함정에 다시 빠지지 않는 규칙.
+Rules that keep you from falling into the same trap again.
 `,
   hallucinated: (l) => `## Context
 ${l.title}
 
 ## Root Cause
-LLM이 존재하지 않는 패키지를 추천.
+The LLM recommended a package that was never published.
 
 ## Resolution
-실제 존재하는 대안 사용.
+Use a real alternative that actually exists on the registry.
 
 ## Avoid
-\`npm info <pkg>\` 로 반드시 실존 확인 후 설치.
+Always verify with \`npm info <pkg>\` before installing.
 `,
 };
 
@@ -139,13 +140,13 @@ ${l.links.map(s => `  - "[[${s}]]"`).join('\n') || '  []'}
 }
 
 function main() {
-  // 디렉터리 생성
+  // Create directories
   for (const cat of ['patterns', 'antipatterns', 'stack-decisions', 'structure-lessons', 'hallucinated']) {
     fs.mkdirSync(path.join(ROOT, 'wiki', cat), { recursive: true });
   }
   fs.mkdirSync(path.join(ROOT, 'state'), { recursive: true });
 
-  // 각 레슨 파일 쓰기
+  // Write each lesson file
   for (const l of LESSONS) {
     const filePath = path.join(ROOT, 'wiki', l.category, `${l.slug}.md`);
     fs.writeFileSync(filePath, renderPage(l), 'utf8');
@@ -177,7 +178,7 @@ ${(byCategory.hallucinated || []).map(l => `- [[${l.slug}]] — ${l.title}`).joi
 `;
   fs.writeFileSync(path.join(ROOT, 'index.md'), indexMd, 'utf8');
 
-  // log.md — 최근 활동 샘플
+  // log.md — sample of recent activity
   const logLines = [
     '2026-04-14T09:12:03Z INGEST react-useeffect-infinite-loop from session-abc111',
     '2026-04-14T10:40:22Z TRIGGER error-loop count=3 hash=f2a1b3c4d5e6',
@@ -189,7 +190,7 @@ ${(byCategory.hallucinated || []).map(l => `- [[${l.slug}]] — ${l.title}`).joi
     '2026-04-18T12:44:09Z INGEST 500-line-component-split from session-abc115',
     '2026-04-19T10:02:17Z INGEST postgres-partial-index-soft-delete from session-abc116',
     '2026-04-19T15:27:40Z INGEST mass-assignment-req-body from session-abc117',
-    '2026-04-20T08:15:22Z SESSION_START source=startup session=demo cwd=C:\\src\\my-app effort=mid',
+    '2026-04-20T08:15:22Z SESSION_START source=startup session=demo effort=mid',
     '2026-04-20T09:01:55Z INGEST catch-and-return-default from session-abc118',
   ];
   fs.writeFileSync(path.join(ROOT, 'log.md'), logLines.join('\n') + '\n', 'utf8');
@@ -198,7 +199,7 @@ ${(byCategory.hallucinated || []).map(l => `- [[${l.slug}]] — ${l.title}`).joi
   fs.writeFileSync(path.join(ROOT, 'config.json'),
     JSON.stringify({ effort: 'mid', created_at: '2026-04-20T00:00:00Z' }, null, 2), 'utf8');
 
-  // state/error_counter.json — 3회 이상 반복된 에러 샘플
+  // state/error_counter.json — sample errors repeated 3+ times
   const counter = {
     'f2a1b3c4d5e6': {
       count: 3,

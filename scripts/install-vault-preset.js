@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Obsidian Vault 프리셋 설치기
+ * Obsidian Vault Preset Installer
  *
- * ~/.claude/exovibe/.obsidian/ 가 비어있으면
- * templates/obsidian-vault/ 내용을 복사한다.
- * 이미 설정이 있으면 건드리지 않는다 (사용자 커스터마이징 보호).
+ * If ~/.claude/exovibe/.obsidian/ is empty, copies the contents of
+ * templates/obsidian-vault/ into it.
+ * If settings already exist, leaves them alone (user customizations are preserved).
  *
- * 사용: node scripts/install-vault-preset.js [--root <path>] [--force]
+ * Usage: node scripts/install-vault-preset.js [--root <path>] [--force]
  */
 
 const fs = require('fs');
@@ -18,7 +18,7 @@ const FORCE = ARGS.includes('--force');
 const rootIdx = ARGS.indexOf('--root');
 const ROOT = rootIdx >= 0 ? ARGS[rootIdx + 1] : path.join(os.homedir(), '.claude', 'exovibe');
 
-// 스크립트 위치 기준 templates 경로
+// templates path resolved relative to this script
 const TEMPLATE_DIR = path.resolve(__dirname, '..', 'templates', 'obsidian-vault');
 const TARGET_DIR = path.join(ROOT, '.obsidian');
 

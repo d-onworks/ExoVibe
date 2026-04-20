@@ -255,6 +255,40 @@ suite('user-prompt-submit hook', () => {
     });
     assert.ok(!r.parsed.hookSpecificOutput, 'Low mode must ignore negative feedback');
   });
+
+  // English-language symmetry — NEGATIVE_FEEDBACK_REGEX is bilingual; the two
+  // tests above cover the Korean path. These two cover the English path so
+  // regressions on either side of the regex are caught.
+  test('negative feedback (English) + High effort triggers immediate ingest', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('user-prompt-submit', {
+      session_id: 'test-015',
+      prompt: "no, this doesn't work. revert that.",
+      cwd: '/tmp/x',
+    });
+    assert.ok(r.parsed.hookSpecificOutput);
+    assert.ok(r.parsed.hookSpecificOutput.additionalContext.includes('/exovibe-ingest'));
+  });
+
+  test('negative feedback (English) + Low effort is ignored', () => {
+    resetTmp();
+    fs.mkdirSync(TMP_ROOT, { recursive: true });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'low',
+      created_at: new Date().toISOString(),
+    }));
+    const r = runHook('user-prompt-submit', {
+      session_id: 'test-016',
+      prompt: 'still broken, go back',
+      cwd: '/tmp/x',
+    });
+    assert.ok(!r.parsed.hookSpecificOutput, 'Low mode must ignore negative feedback');
+  });
 });
 
 // ---------- post-tool-use hook — error loop E2E ----------

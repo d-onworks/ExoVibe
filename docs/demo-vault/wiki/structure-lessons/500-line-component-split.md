@@ -1,5 +1,5 @@
 ---
-title: 500줄 초과 컴포넌트는 feature별로 분리
+title: Split components over 500 lines by feature
 slug: 500-line-component-split
 category: structure-lesson
 tags: [architecture, refactoring]
@@ -16,16 +16,16 @@ links:
 ---
 
 ## Context
-구조적 결함이 드러난 상황.
+A structural weakness surfaced as the component grew.
 
 ## Root Cause
-설계 초기의 단순화 선택이 시간이 지나 비용화.
+Early simplifications compounded into costly coupling over time.
 
 ## Resolution
-리팩토링 방향.
+Refactor by feature boundary, not by file type.
 
 ## Avoid
-같은 함정에 다시 빠지지 않는 규칙.
+Rules that keep you from falling into the same trap again.
 
 
 ## Related

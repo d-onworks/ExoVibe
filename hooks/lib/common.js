@@ -153,6 +153,8 @@ function appendLog(action) {
 }
 
 // Load config. Creates default (Mid) config on first run.
+// user_language is null until the user picks one (first-run prompt in
+// exovibe-ingest or exovibe-sync setup).
 function loadConfig() {
   const configPath = path.join(EXOVIBE_ROOT, 'config.json');
   try {
@@ -162,12 +164,14 @@ function loadConfig() {
     return {
       effort,
       budget: { ...EFFORT_BUDGET[effort], ...(cfg.overrides || {}) },
+      user_language: cfg.user_language || null,
       raw: cfg,
     };
   } catch {
     // First run — generate default config.
     const defaultCfg = {
       effort: DEFAULT_EFFORT,
+      user_language: null,
       created_at: new Date().toISOString(),
       last_changed_at: null,
       overrides: {},
@@ -181,6 +185,7 @@ function loadConfig() {
     return {
       effort: DEFAULT_EFFORT,
       budget: EFFORT_BUDGET[DEFAULT_EFFORT],
+      user_language: null,
       raw: defaultCfg,
     };
   }

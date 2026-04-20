@@ -1,5 +1,5 @@
 ---
-title: react-query-sync 패키지 존재하지 않음
+title: react-query-sync package does not exist
 slug: react-query-sync
 category: hallucinated
 tags: [react, hallucinated]
@@ -16,13 +16,13 @@ links:
 ---
 
 ## Context
-react-query-sync 패키지 존재하지 않음
+react-query-sync package does not exist
 
 ## Root Cause
-LLM이 존재하지 않는 패키지를 추천.
+The LLM recommended a package that was never published.
 
 ## Resolution
-실제 존재하는 대안 사용.
+Use a real alternative that actually exists on the registry.
 
 ## Avoid
-`npm info <pkg>` 로 반드시 실존 확인 후 설치.
+Always verify with `npm info <pkg>` before installing.

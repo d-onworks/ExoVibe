@@ -1,5 +1,5 @@
 ---
-title: Zustand를 Redux 대신 선택한 이유
+title: Why we chose Zustand instead of Redux
 slug: zustand-over-redux
 category: stack-decision
 tags: [state-management]
@@ -16,16 +16,16 @@ links:
 ---
 
 ## Context
-기술 선택 시점의 요구사항.
+Requirements at the time of the tech choice.
 
 ## Root Cause
-비교 대상들의 tradeoff.
+Tradeoffs between the alternatives considered.
 
 ## Resolution
-Zustand를 Redux 대신 선택한 이유.
+Why we chose Zustand instead of Redux.
 
 ## Avoid
-이 선택이 맞지 않는 케이스.
+Cases where this choice is a poor fit.
 
 
 ## Related

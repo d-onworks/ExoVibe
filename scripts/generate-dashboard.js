@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 /**
- * ExoVibe 대시보드 생성기
+ * ExoVibe Dashboard Generator
  *
- * ~/.claude/exovibe/ 의 현재 상태를 읽어서
- * 단일 HTML 파일 (dashboard.html) 로 렌더한다.
+ * Reads the current state of ~/.claude/exovibe/ and renders it to
+ * a single HTML file (dashboard.html).
  *
- * - 의존성 0 (Node 표준 라이브러리만)
- * - 오프라인 동작 (D3.js CDN 포함하되 실패 시 목록 폴백)
- * - 결정론적 (동일 입력 → 동일 출력)
+ * - Zero dependencies (Node standard library only)
+ * - Works offline (includes D3.js CDN but falls back to a list on failure)
+ * - Deterministic (same input → same output)
  *
- * 사용: node scripts/generate-dashboard.js [--root <path>]
- * 기본 root: ~/.claude/exovibe
+ * Usage: node scripts/generate-dashboard.js [--root <path>]
+ * Default root: ~/.claude/exovibe
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// --- 설정 ---------------------------------------------------------------
+// --- Config -------------------------------------------------------------
 
 const ARGS = process.argv.slice(2);
 const rootArgIdx = ARGS.indexOf('--root');
@@ -32,16 +32,16 @@ const ERROR_COUNTER_PATH = path.join(ROOT, 'state', 'error_counter.json');
 const CONFIG_PATH = path.join(ROOT, 'config.json');
 const OUTPUT = path.join(ROOT, 'dashboard.html');
 
-// 카테고리별 색상 (Obsidian 그래프뷰와 일치)
+// Per-category colors (matches the Obsidian graph view)
 const CATEGORY_COLORS = {
-  pattern: '#22c55e',         // 초록 (성공)
-  antipattern: '#ef4444',     // 빨강 (실패)
-  'stack-decision': '#3b82f6',// 파랑 (선택)
-  'structure-lesson': '#f59e0b', // 주황 (구조)
-  hallucinated: '#a855f7',    // 보라 (환각)
+  pattern: '#22c55e',         // green (success)
+  antipattern: '#ef4444',     // red (failure)
+  'stack-decision': '#3b82f6',// blue (choice)
+  'structure-lesson': '#f59e0b', // orange (structure)
+  hallucinated: '#a855f7',    // purple (hallucination)
 };
 
-// --- 유틸 ---------------------------------------------------------------
+// --- Utils --------------------------------------------------------------
 
 function safeRead(p, fallback = '') {
   try { return fs.readFileSync(p, 'utf8'); } catch { return fallback; }
@@ -97,7 +97,7 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
-// --- 수집 ---------------------------------------------------------------
+// --- Collect ------------------------------------------------------------
 
 function collect() {
   const categories = ['patterns', 'antipatterns', 'stack-decisions', 'structure-lessons', 'hallucinated'];
@@ -129,7 +129,7 @@ function collect() {
     }
   }
 
-  // degree (in + out 링크 수) 계산 — 노드 크기 산정용
+  // Compute degree (in + out link count) — used for node size
   const slugToPage = Object.fromEntries(pages.map(p => [p.slug, p]));
   const degree = Object.fromEntries(pages.map(p => [p.slug, 0]));
   for (const p of pages) {
@@ -142,9 +142,9 @@ function collect() {
   }
   pages.forEach(p => { p.degree = degree[p.slug] || 0; });
 
-  // 태그별 집계 (stack 클러스터링 + by-stack 패널용)
+  // Aggregate by tag (for stack clustering + the by-stack panel)
   const tagCounts = {};
-  const tagToCategory = {};  // 태그 → 가장 흔한 카테고리 (대표 색상)
+  const tagToCategory = {};  // tag → most common category (representative color)
   for (const p of pages) {
     for (const tag of p.tags) {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
@@ -160,7 +160,7 @@ function collect() {
       return { tag, count: n, color: CATEGORY_COLORS[dominantCat] || '#64748b' };
     });
 
-  // log.md 에서 최근 엔트리 파싱
+  // Parse recent entries from log.md
   const logRaw = safeRead(LOG_PATH);
   const logLines = logRaw.split('\n').filter(l => l.trim()).slice(-30).reverse();
   const recentLogs = logLines.map(line => {
@@ -169,7 +169,7 @@ function collect() {
     return { timestamp: m[1], op: m[2], detail: m[3] };
   }).filter(Boolean);
 
-  // 에러 카운터
+  // Error counter
   const errorCounter = safeJson(ERROR_COUNTER_PATH, {});
   const errorLoopsCaught = Object.values(errorCounter).filter(e => e.count >= 3).length;
   const hallucBlocked = counts.hallucinated;
@@ -190,7 +190,7 @@ function collect() {
   };
 }
 
-// --- HTML 렌더링 ---------------------------------------------------------
+// --- HTML rendering -----------------------------------------------------
 
 function renderHtml(data) {
   const statCards = [
@@ -202,11 +202,11 @@ function renderHtml(data) {
     { label: 'Halluc Blocked', value: data.hallucBlocked, color: CATEGORY_COLORS.hallucinated },
   ];
 
-  // 그래프용 데이터 — 슬러그 라벨 + degree + tags 전달
+  // Graph data — pass slug label + degree + tags
   const nodes = data.pages.map(p => ({
     id: p.slug,
-    label: p.slug,           // 짧은 슬러그를 기본 라벨로
-    fullTitle: p.title,      // 호버 툴팁용 풀 제목
+    label: p.slug,           // short slug as the default label
+    fullTitle: p.title,      // full title for hover tooltip
     category: p.category,
     color: CATEGORY_COLORS[p.category] || '#64748b',
     degree: p.degree || 0,
@@ -227,7 +227,7 @@ function renderHtml(data) {
     .slice(0, 10);
 
   return `<!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>ExoVibe — Your Second Brain</title>
@@ -244,7 +244,7 @@ function renderHtml(data) {
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 14px; line-height: 1.5;
   }
   header {
@@ -349,7 +349,7 @@ function renderHtml(data) {
   .stack-cloud .tag:hover { background: rgba(255,255,255,0.08); }
   .stack-cloud .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
   .stack-cloud .tag .n { color: var(--muted); font-weight: 600; }
-  /* SVG 그래프 라벨 — 호버 시만 진하게 */
+  /* SVG graph labels — only bold on hover */
   #graph-svg .node-label { fill: var(--muted); font-size: 10px;
     font-family: 'SF Mono', Monaco, Consolas, monospace; pointer-events: none; }
   #graph-svg .node-label.hub { fill: var(--text); font-size: 11px; font-weight: 600; }
@@ -388,20 +388,20 @@ function renderHtml(data) {
       <div class="graph-controls">
         <button id="mode-2d" class="active" type="button">2D</button>
         <button id="mode-3d" type="button">3D</button>
-        <button id="reset-view" type="button" title="초기 뷰로 복귀">⟳</button>
+        <button id="reset-view" type="button" title="Reset view">⟳</button>
       </div>
       <svg id="graph-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="graph-help" id="graph-help">드래그: 노드/뷰 이동 · 휠: 줌 · 3D 모드에서 드래그: 회전</div>
+      <div class="graph-help" id="graph-help">Drag: move node/view · Wheel: zoom · Drag in 3D mode: rotate</div>
       <div class="graph-fallback">
         ${nodes.length === 0
-          ? '아직 아카이브된 페이지가 없습니다. 대화 중 <code>#wiki</code> 태그로 첫 레슨을 저장해보세요.'
-          : '<strong>페이지 목록</strong><ul>' + nodes.map(n => `<li>${esc(n.label)} <span style="color:${n.color}">●</span> ${esc(n.category)}</li>`).join('') + '</ul>'
+          ? 'No pages archived yet. Save your first lesson during a conversation with the <code>#wiki</code> tag.'
+          : '<strong>Pages</strong><ul>' + nodes.map(n => `<li>${esc(n.label)} <span style="color:${n.color}">●</span> ${esc(n.category)}</li>`).join('') + '</ul>'
         }
       </div>
     </div>
     <div class="legend">
       ${Object.entries(CATEGORY_COLORS).map(([k, v]) => `<span><span class="sw" style="background:${v}"></span>${esc(k)}</span>`).join('')}
-      <span style="margin-left:auto">노드 크기 ∝ 연결 수 · 호버: 풀 제목</span>
+      <span style="margin-left:auto">Node size ∝ connection count · Hover: full title</span>
     </div>
   </section>
 
@@ -409,9 +409,9 @@ function renderHtml(data) {
     <h2>By Stack</h2>
     <div class="panel">
       ${data.topTags.length === 0
-        ? '<div class="empty">stack 태그가 아직 없습니다.</div>'
+        ? '<div class="empty">No stack tags yet.</div>'
         : `<div class="stack-cloud">${data.topTags.map(t => `
-            <span class="tag" title="${esc(t.tag)} 관련 레슨 ${t.count}건">
+            <span class="tag" title="${esc(t.count)} lessons related to ${esc(t.tag)}">
               <span class="dot" style="background:${t.color}"></span>
               <span>${esc(t.tag)}</span>
               <span class="n">${t.count}</span>
@@ -425,7 +425,7 @@ function renderHtml(data) {
       <h2>Recent Lessons</h2>
       <div class="panel">
         ${recentPages.length === 0
-          ? '<div class="empty">레슨이 아직 없습니다.</div>'
+          ? '<div class="empty">No lessons yet.</div>'
           : `<ul class="list">${recentPages.map(p => `
               <li>
                 <span class="chip" style="background:${CATEGORY_COLORS[p.category] || '#334155'}">${esc(p.category)}</span>
@@ -440,7 +440,7 @@ function renderHtml(data) {
       <h2>Activity Log</h2>
       <div class="panel">
         ${data.recentLogs.length === 0
-          ? '<div class="empty">로그가 없습니다.</div>'
+          ? '<div class="empty">No logs.</div>'
           : data.recentLogs.slice(0, 15).map(l => `
               <div class="log-line">
                 <span class="op">${esc(l.op)}</span>
@@ -460,7 +460,7 @@ function renderHtml(data) {
 
 <script>
 (function() {
-  // Interactive 3D-capable Knowledge Graph — 의존성 0 vanilla JS
+  // Interactive 3D-capable Knowledge Graph — zero-dependency vanilla JS
   const nodes = ${JSON.stringify(nodes)};
   const edges = ${JSON.stringify(edges)};
   const svg = document.getElementById('graph-svg');
@@ -471,13 +471,13 @@ function renderHtml(data) {
   const H = 540;
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
 
-  // 노드 반경: 5 + sqrt(degree) * 4 → 1연결=9px, 4연결=13px, 9연결=17px
+  // Node radius: 5 + sqrt(degree) * 4 → 1 link=9px, 4 links=13px, 9 links=17px
   for (const n of nodes) {
     n.r = 5 + Math.sqrt(n.degree) * 4;
-    n.isHub = n.degree >= 2;  // 허브 노드만 라벨 진하게
+    n.isHub = n.degree >= 2;  // bold labels only for hub nodes
   }
 
-  // 카테고리별 시드 + z축 깊이 분산 (3D 모드용)
+  // Seed by category + spread z-axis depth (for 3D mode)
   const cats = [...new Set(nodes.map(n => n.category))];
   const catAngle = Object.fromEntries(cats.map((c, i) => [c, (i / cats.length) * Math.PI * 2]));
   const catZ = Object.fromEntries(cats.map((c, i) => [c, (i - cats.length/2) * 60]));
@@ -493,7 +493,7 @@ function renderHtml(data) {
   });
   const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
 
-  // 태그 공유 페어 미리 계산 (클러스터링 인력용)
+  // Precompute tag-sharing pairs (for clustering attraction)
   const tagPairs = [];
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
@@ -516,7 +516,7 @@ function renderHtml(data) {
         const d = Math.sqrt(d2);
         fx += (dx/d) * f;
         fy += (dy/d) * f;
-        fz += (dz/d) * f * 0.3;  // z축은 약한 반발
+        fz += (dz/d) * f * 0.3;  // weaker repulsion on z-axis
       }
       fx += (W/2 - n.x) * 0.004;
       fy += (H/2 - n.y) * 0.004;
@@ -548,7 +548,7 @@ function renderHtml(data) {
     }
   }
 
-  // ===== 뷰 상태 (인터랙션) =====
+  // ===== View state (interaction) =====
   const view = {
     mode: '2d',
     yaw: 0, pitch: 0,
@@ -565,7 +565,7 @@ function renderHtml(data) {
         depth: 0,
       };
     }
-    // 3D: yaw(Y축) + pitch(X축) 회전 → 원근 투영
+    // 3D: yaw (Y axis) + pitch (X axis) rotation → perspective projection
     const cx = n.x - W/2, cy = n.y - H/2, cz = n.z;
     const cosY = Math.cos(view.yaw), sinY = Math.sin(view.yaw);
     const cosP = Math.cos(view.pitch), sinP = Math.sin(view.pitch);
@@ -589,7 +589,7 @@ function renderHtml(data) {
     const proj = nodes.map(n => ({ n, p: project(n) }));
     if (view.mode === '3d') proj.sort((a, b) => b.p.depth - a.p.depth);
 
-    // 엣지
+    // Edges
     const gEdges = document.createElementNS(NS, 'g');
     for (const e of edges) {
       const s = byId[e.source], t = byId[e.target];
@@ -609,7 +609,7 @@ function renderHtml(data) {
     }
     svg.appendChild(gEdges);
 
-    // 노드
+    // Nodes
     for (const { n, p } of proj) {
       const g = document.createElementNS(NS, 'g');
       g.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')');
@@ -646,7 +646,7 @@ function renderHtml(data) {
     }
   }
 
-  // ===== 마우스 인터랙션 =====
+  // ===== Mouse interaction =====
   function svgCoords(e) {
     const rect = svg.getBoundingClientRect();
     return {
@@ -710,7 +710,7 @@ function renderHtml(data) {
     render();
   }, { passive: false });
 
-  // ===== 모드 토글 =====
+  // ===== Mode toggle =====
   const btn2d = document.getElementById('mode-2d');
   const btn3d = document.getElementById('mode-3d');
   const btnReset = document.getElementById('reset-view');
@@ -720,8 +720,8 @@ function renderHtml(data) {
     btn2d.classList.toggle('active', m === '2d');
     btn3d.classList.toggle('active', m === '3d');
     help.textContent = m === '2d'
-      ? '드래그: 노드 이동 · 빈 영역: 팬 · 휠: 줌'
-      : '드래그: 회전 · 휠: 줌 · 2D에서 노드 이동 가능';
+      ? 'Drag: move node · Empty area: pan · Wheel: zoom'
+      : 'Drag: rotate · Wheel: zoom · Switch to 2D to move nodes';
     render();
   }
   btn2d.addEventListener('click', () => setMode('2d'));
@@ -739,7 +739,7 @@ function renderHtml(data) {
 `;
 }
 
-// --- 메인 ---------------------------------------------------------------
+// --- Main ---------------------------------------------------------------
 
 function main() {
   if (!fs.existsSync(ROOT)) {

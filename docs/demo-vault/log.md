@@ -8,5 +8,5 @@
 2026-04-18T12:44:09Z INGEST 500-line-component-split from session-abc115
 2026-04-19T10:02:17Z INGEST postgres-partial-index-soft-delete from session-abc116
 2026-04-19T15:27:40Z INGEST mass-assignment-req-body from session-abc117
-2026-04-20T08:15:22Z SESSION_START source=startup session=demo cwd=C:\src\my-app effort=mid
+2026-04-20T08:15:22Z SESSION_START source=startup session=demo effort=mid
 2026-04-20T09:01:55Z INGEST catch-and-return-default from session-abc118

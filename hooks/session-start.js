@@ -23,7 +23,7 @@ const {
     const { effort, budget } = loadConfig();
 
     appendLog(
-      `SESSION_START source=${source} session=${sessionId} effort=${effort} cwd=${input.cwd || '-'}`
+      `SESSION_START source=${source} session=${sessionId} effort=${effort}`
     );
 
     const indexPath = path.join(EXOVIBE_ROOT, 'index.md');

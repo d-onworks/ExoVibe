@@ -1,5 +1,5 @@
 ---
-title: Next.js App Router 선택
+title: Choosing Next.js App Router
 slug: nextjs-app-router-over-pages
 category: stack-decision
 tags: [nextjs]
@@ -16,16 +16,16 @@ links:
 ---
 
 ## Context
-기술 선택 시점의 요구사항.
+Requirements at the time of the tech choice.
 
 ## Root Cause
-비교 대상들의 tradeoff.
+Tradeoffs between the alternatives considered.
 
 ## Resolution
-Next.js App Router 선택.
+Choosing Next.js App Router.
 
 ## Avoid
-이 선택이 맞지 않는 케이스.
+Cases where this choice is a poor fit.
 
 
 ## Related

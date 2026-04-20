@@ -1,5 +1,5 @@
 ---
-title: Zustand persist 미들웨어 — hydration mismatch 없이
+title: Zustand persist middleware without hydration mismatch
 slug: zustand-persist-middleware
 category: pattern
 tags: [state-management, react]
@@ -16,16 +16,16 @@ links:
 ---
 
 ## Context
-Zustand persist 미들웨어 — hydration mismatch 없이 — 반복 사용 가능한 성공 패턴.
+Zustand persist middleware without hydration mismatch — a reusable success pattern.
 
 ## Root Cause
-실제 서비스에서 검증된 접근법.
+An approach validated in production.
 
 ## Resolution
-코드/커맨드 예시 (생략 — 데모용).
+Code / command example (omitted — demo data).
 
 ## Avoid
-잘못된 구현 예시 (생략 — 데모용).
+Incorrect implementation example (omitted — demo data).
 
 
 ## Related

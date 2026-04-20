@@ -113,6 +113,47 @@ That's it. No API key. No database. No config.
 
 ---
 
+## Your wiki, your language
+
+English infrastructure, native-language content. Scanning a dense wiki of
+your own hard-won lessons at 11pm doesn't work if the text doesn't register
+in your mother tongue.
+
+On first use, ExoVibe asks you once:
+
+```
+Before I write your first wiki page — what language should your
+personal lessons be written in?
+(어떤 언어로 작성할까요? / どの言語で? / ¿En qué idioma? / Quelle langue ?)
+
+Reply with a language code: en, ko, ja, zh, es, fr, de, pt, ru, vi, id, ...
+or 'auto' to detect from your prompts.
+```
+
+Pick `ko` and your wiki pages come out in Korean. Pick `ja` and they come
+out in Japanese. Pick `auto` and ExoVibe infers from your recent prompts
+at every ingest — code-switch freely between projects.
+
+**What stays English** (for portability and cross-machine sync):
+- file names, `slug:` and `category:`, folder structure, `tags:`
+- code blocks, commit messages, error strings quoted from logs
+
+**What follows your language**:
+- the actual prose: `## Context`, `## Root Cause`, `## Resolution`, `## Avoid`
+- the `title:` frontmatter value
+- the one-sentence summary in `index.md`
+
+Change anytime: `/exovibe-config language <code>`. Existing pages are not
+retranslated — only new lessons follow the new setting.
+
+**Why this is different from traditional i18n**: we don't ship translation
+files. Claude writes directly in your language. That means ExoVibe supports
+every language Claude supports (100+) with zero code to maintain, and your
+wiki reads exactly like a human teammate wrote it — because an AI teammate
+did, in your voice.
+
+---
+
 ## Architecture (30-second tour)
 
 ```

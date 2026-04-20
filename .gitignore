@@ -1,18 +1,18 @@
-# 로컬 테스트용 wiki (사용자 데이터는 레포에 커밋 금지)
+# Local test wiki (never commit user data to the repo)
 test-wiki/
 .exovibe-local/
 
-# 내부 기획 문서 (해커톤 제출 전 비공개)
-# 해커톤 후 docs/ARCHITECTURE.md로 정제하여 공개 예정
+# Internal planning docs (not public before hackathon submission)
+# After the hackathon, to be reworked into docs/ARCHITECTURE.md for public release
 prd.md
 marketing/
 
-# 로컬 exovibe 런타임 산출물 (사용자 PC의 실제 데이터)
-# ~/.claude/exovibe/ 는 홈에 있지만 혹시 레포 내부에 생성되면 차단
+# Local exovibe runtime artifacts (real user data on the user's machine)
+# ~/.claude/exovibe/ lives in $HOME, but block it if it ever appears inside the repo
 exovibe-runtime/
 *.exovibe.local.json
 
-# 노드
+# Node
 node_modules/
 npm-debug.log
 .pnpm-debug.log
@@ -30,25 +30,25 @@ desktop.ini
 *.swp
 *.swo
 
-# Claude Code 로컬 세션 설정 (개인 권한 허용 목록 — 공유 금지)
+# Claude Code local session settings (per-user allowlist — do not share)
 .claude/settings.local.json
 
-# 빌드 산출물
+# Build artifacts
 dist/
 build/
 *.tar.gz
 
-# 환경 / 비밀
+# Environment / secrets
 .env
 .env.*
 !.env.example
 
-# 임시 파일
+# Temp files
 *.tmp
 *.log
 
-# Playwright MCP 자동 생성물 (스크린샷 아카이브)
+# Playwright MCP auto-generated artifacts (screenshot archive)
 .playwright-mcp/
 
-# 데모 vault 의 재생성 가능 산출물 (소스는 커밋, 대시보드는 스크립트로 생성)
+# Regenerable artifacts in the demo vault (source is committed, dashboard is script-generated)
 docs/demo-vault/dashboard.html

@@ -1,5 +1,5 @@
 ---
-title: req.body 통째로 DB 전달 금지
+title: Never pass req.body straight into the DB
 slug: mass-assignment-req-body
 category: antipattern
 tags: [security, backend]
@@ -16,16 +16,16 @@ links:
 ---
 
 ## Context
-req.body 통째로 DB 전달 금지.
+Never pass req.body straight into the DB.
 
 ## Root Cause
-같은 실수를 반복하게 되는 구조적 원인.
+The structural reason this mistake keeps recurring.
 
 ## Resolution
-올바른 대안.
+The correct alternative.
 
 ## Avoid
-이 패턴을 유발하는 트리거.
+Triggers that lead you back into this pattern.
 
 
 ## Related

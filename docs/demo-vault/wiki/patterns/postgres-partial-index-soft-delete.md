@@ -1,5 +1,5 @@
 ---
-title: soft-delete 테이블에는 partial index 필수
+title: Partial index is mandatory on soft-delete tables
 slug: postgres-partial-index-soft-delete
 category: pattern
 tags: [postgres, performance]
@@ -16,13 +16,13 @@ links:
 ---
 
 ## Context
-soft-delete 테이블에는 partial index 필수 — 반복 사용 가능한 성공 패턴.
+Partial index is mandatory on soft-delete tables — a reusable success pattern.
 
 ## Root Cause
-실제 서비스에서 검증된 접근법.
+An approach validated in production.
 
 ## Resolution
-코드/커맨드 예시 (생략 — 데모용).
+Code / command example (omitted — demo data).
 
 ## Avoid
-잘못된 구현 예시 (생략 — 데모용).
+Incorrect implementation example (omitted — demo data).
