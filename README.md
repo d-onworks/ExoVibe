@@ -92,6 +92,32 @@ they let ExoVibe remember for them.**
 
 That's it. No API key. No database. No config.
 
+### Stay on the latest version (recommended)
+
+Claude Code pins plugins to the version you first installed and does **not**
+auto-update by default. Turn this on once so you receive ExoVibe bug fixes
+and new features without having to remember:
+
+**Option A — per-marketplace toggle (UI)**
+```
+/plugin → Marketplaces tab → exovibe-marketplace → Enable auto-update
+```
+
+**Option B — force auto-update everywhere (env var)**
+```bash
+# Add to your shell profile (~/.bashrc, ~/.zshrc, or equivalent)
+export FORCE_AUTOUPDATE_PLUGINS=1
+```
+
+**Manual update (if auto-update is off)**
+```
+/plugin marketplace update exovibe-marketplace
+/plugin update exovibe@exovibe-marketplace
+/reload-plugins
+```
+
+Release notes for every version live in [CHANGELOG.md](CHANGELOG.md).
+
 ---
 
 ## What it does

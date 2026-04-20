@@ -3,6 +3,24 @@
 All notable changes to the ExoVibe plugin. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.1] — 2026-04-20
+
+### Fixed
+- `/exovibe-config` was not appearing in the `available-skills` list because
+  its SKILL.md frontmatter `argument-hint` value used an invalid YAML pattern
+  (`[A] OR [B]`), causing the YAML parser to reject the whole frontmatter.
+  Rewritten as a quoted single-line string. Bug was present since v0.2.0.
+
+### Added
+- README section "Stay on the latest version" documenting the auto-update
+  toggle (per-marketplace UI option and `FORCE_AUTOUPDATE_PLUGINS=1` env
+  var) and the manual three-command update path. Links to CHANGELOG.md.
+
+### Not changed
+- Dashboard chrome (menus, labels) remains English. Decision: treat as
+  global developer-tool convention, not an i18n target. Removed from
+  v0.5.0 scope.
+
 ## [0.4.0] — 2026-04-20
 
 ### Added

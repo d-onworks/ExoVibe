@@ -4,7 +4,7 @@ description: View or change ExoVibe's parsing effort level (low / mid / high) or
 context: fork
 agent: general-purpose
 allowed-tools: Read Write Edit Bash(node *)
-argument-hint: [effort low|mid|high] OR [language <code>] OR [enable <check>] OR [disable <check>] OR [show]
+argument-hint: "effort <level> | language <code> | enable <check> | disable <check> | show"
 ---
 
 # ExoVibe Config Skill
