@@ -29,10 +29,18 @@ The user's query arrives via `$ARGUMENTS` OR via the current conversation contex
 
 Read `~/.claude/exovibe/index.md`. Scan every entry (it's designed to be cheap).
 
-Match by:
-- Keyword overlap in title
-- Stack tags (if current project uses React, prioritize `stack: [react, ...]` entries)
-- Category (patterns for "how do I", antipatterns for "why isn't this working")
+Match by, in this order:
+1. **Cwd stack auto-filter** — read the current working directory's
+   `package.json` / `Cargo.toml` / `go.mod` / `requirements.txt` / `pubspec.yaml`
+   and extract framework/library tags (e.g. `nextjs`, `supabase`, `drizzle`).
+   Pages whose `stack:` frontmatter overlaps with cwd-detected tags are
+   prioritized 2× over generic matches. If cwd has no manifest, skip this step.
+2. **Triggers field** — pages with a `triggers:` frontmatter field whose
+   tokens appear in the user query (case-insensitive substring) get a strong
+   boost.
+3. **Keyword overlap in title** — basic string match.
+4. **Category hint** — `patterns/` for "how do I", `antipatterns/` for "why
+   isn't this working", `stack-decisions/` for "should I use X or Y".
 
 Pick the top 3–5 candidate slugs.
 

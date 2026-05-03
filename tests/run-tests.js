@@ -549,6 +549,242 @@ suite('Plugin co-existence — namespace and budget compliance', () => {
 });
 
 // ========================================================================
+// v0.5 — wiki-match unit tests + prevention E2E
+// ========================================================================
+
+// Helper: write a fixture wiki page into TMP_ROOT/wiki/<category>/<slug>.md
+function writeFixturePage(category, slug, frontmatter, body) {
+  const dir = path.join(TMP_ROOT, 'wiki', category);
+  fs.mkdirSync(dir, { recursive: true });
+  const fmLines = ['---'];
+  for (const [k, v] of Object.entries(frontmatter)) {
+    if (Array.isArray(v)) {
+      fmLines.push(`${k}: [${v.map((x) => JSON.stringify(x)).join(', ')}]`);
+    } else {
+      fmLines.push(`${k}: ${JSON.stringify(v)}`);
+    }
+  }
+  fmLines.push('---');
+  fs.writeFileSync(path.join(dir, `${slug}.md`), fmLines.join('\n') + '\n\n' + body);
+}
+
+// Helper: write a fixture cwd with a package.json containing the given deps.
+function writeFixtureCwd(deps) {
+  const cwdDir = path.join(TMP_ROOT, 'fixture-cwd');
+  fs.mkdirSync(cwdDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(cwdDir, 'package.json'),
+    JSON.stringify({ name: 'fixture', dependencies: deps })
+  );
+  return cwdDir;
+}
+
+suite('wiki-match.js — unit tests', () => {
+  test('detectCwdStack reads package.json deps and emits stack tags', () => {
+    resetTmp();
+    const cwd = writeFixtureCwd({
+      next: '14.0.0',
+      '@supabase/supabase-js': '2.0.0',
+      'drizzle-orm': '0.30.0',
+    });
+    const r = spawnSync('node', ['-e', `
+      process.env.EXOVIBE_ROOT = ${JSON.stringify(TMP_ROOT)};
+      const { detectCwdStack } = require(${JSON.stringify(path.join(HOOKS_DIR, 'lib', 'wiki-match.js'))});
+      console.log(JSON.stringify(detectCwdStack(${JSON.stringify(cwd)}).sort()));
+    `], { encoding: 'utf8' });
+    const tags = JSON.parse(r.stdout);
+    assert.ok(tags.includes('nextjs'), 'expected nextjs tag, got: ' + tags.join(','));
+    assert.ok(tags.includes('supabase'));
+    assert.ok(tags.includes('drizzle'));
+  });
+
+  test('parseFrontmatter handles inline-array stack and triggers fields', () => {
+    resetTmp();
+    writeFixturePage('antipatterns', 'fixture-x', {
+      title: 'fixture',
+      slug: 'fixture-x',
+      stack: ['nextjs', 'drizzle'],
+      severity: 'high',
+      'env-scope': 'prod',
+      triggers: ['max:1', 'pool', 'connection'],
+    }, '## Context\nhello world');
+    const r = spawnSync('node', ['-e', `
+      process.env.EXOVIBE_ROOT = ${JSON.stringify(TMP_ROOT)};
+      const { readAllWikiPages } = require(${JSON.stringify(path.join(HOOKS_DIR, 'lib', 'wiki-match.js'))});
+      const pages = readAllWikiPages();
+      console.log(JSON.stringify(pages[0]));
+    `], { encoding: 'utf8' });
+    const page = JSON.parse(r.stdout);
+    assert.deepStrictEqual(page.stack.sort(), ['drizzle', 'nextjs']);
+    assert.strictEqual(page.severity, 'high');
+    assert.strictEqual(page.envScope, 'prod');
+    assert.deepStrictEqual(page.triggers, ['max:1', 'pool', 'connection']);
+  });
+
+  test('detectRiskyKeywords picks up env-sensitive tokens', () => {
+    const r = spawnSync('node', ['-e', `
+      const { detectRiskyKeywords } = require(${JSON.stringify(path.join(HOOKS_DIR, 'lib', 'wiki-match.js'))});
+      const a = detectRiskyKeywords('please set max: 1 in the pool config');
+      const b = detectRiskyKeywords('just refactor the button component');
+      console.log(JSON.stringify({ a, b }));
+    `], { encoding: 'utf8' });
+    const out = JSON.parse(r.stdout);
+    assert.ok(out.a.length >= 2, 'expected risky tokens, got: ' + JSON.stringify(out.a));
+    assert.strictEqual(out.b.length, 0, 'safe prompt flagged: ' + JSON.stringify(out.b));
+  });
+});
+
+suite('SessionStart hook — v0.5 stack-aware injection', () => {
+  test('cwd matches wiki stack: page body is embedded (not just index)', () => {
+    resetTmp();
+    fs.writeFileSync(
+      path.join(TMP_ROOT, 'index.md'),
+      '# ExoVibe Index\n\n## Antipatterns\n- [[my-page]] — short summary\n'
+    );
+    writeFixturePage('antipatterns', 'my-page', {
+      title: 'My Page',
+      slug: 'my-page',
+      stack: ['nextjs', 'drizzle'],
+      severity: 'high',
+    }, '## Context\nThis page only matters when both Next.js and Drizzle are in play.\n\n## Resolution\nUse `max: production ? 1 : 10`.');
+    const cwd = writeFixtureCwd({ next: '14.0.0', 'drizzle-orm': '0.30.0' });
+
+    const r = runHook('session-start', {
+      session_id: 'stack-aware-1',
+      source: 'startup',
+      cwd,
+    });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(ctx.includes('Stack-relevant lessons'), 'stack block missing: ' + ctx.slice(0, 400));
+    assert.ok(
+      ctx.includes('production ? 1 : 10'),
+      'page body not embedded — got: ' + ctx.slice(0, 800)
+    );
+    assert.ok(ctx.includes('Detected stack:'));
+  });
+
+  test('cwd has no manifest: stack block is omitted, index still injected', () => {
+    resetTmp();
+    fs.writeFileSync(path.join(TMP_ROOT, 'index.md'), '# ExoVibe Index\n');
+    const cwdDir = path.join(TMP_ROOT, 'no-manifest');
+    fs.mkdirSync(cwdDir, { recursive: true });
+
+    const r = runHook('session-start', {
+      session_id: 'stack-aware-2',
+      source: 'startup',
+      cwd: cwdDir,
+    });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(!ctx.includes('Stack-relevant lessons'), 'unexpected stack block');
+    assert.ok(ctx.includes('=== ExoVibe Index ==='));
+  });
+
+  test('lint reminder fires when 30+ pages exist and never linted', () => {
+    resetTmp();
+    fs.writeFileSync(path.join(TMP_ROOT, 'index.md'), '# ExoVibe Index\n');
+    for (let i = 0; i < 31; i++) {
+      writeFixturePage('antipatterns', `page-${i}`, { slug: `page-${i}` }, '## Context\nx');
+    }
+    const r = runHook('session-start', {
+      session_id: 'lint-test',
+      source: 'startup',
+    });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(
+      ctx.includes('[ExoVibe maintenance]'),
+      'lint reminder missing: ' + ctx.slice(-400)
+    );
+    assert.ok(ctx.includes('/exovibe-lint'));
+  });
+});
+
+suite('UserPromptSubmit hook — v0.5 risky-keyword prevention', () => {
+  test('risky keyword + stack-matching wiki surfaces excerpt before code', () => {
+    resetTmp();
+    writeFixturePage('antipatterns', 'pool-prod', {
+      slug: 'pool-prod',
+      stack: ['drizzle'],
+      severity: 'critical',
+      triggers: ['max:1', 'pool', 'connection'],
+    }, '## Context\nUsing max:1 in dev with drizzle starves RSC. Use pool size 10.\n\n## Resolution\n`max: NODE_ENV === "production" ? 1 : 10`');
+    const cwd = writeFixtureCwd({ 'drizzle-orm': '0.30.0' });
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+      user_language: 'en',
+    }));
+
+    const r = runHook('user-prompt-submit', {
+      session_id: 'prevent-1',
+      cwd,
+      prompt: 'add max: 1 to the pool configuration',
+    });
+    const ctx = r.parsed.hookSpecificOutput?.additionalContext || '';
+    assert.ok(ctx.includes('[ExoVibe prevention]'), 'prevention block missing: ' + ctx.slice(0, 300));
+    assert.ok(
+      ctx.includes('production') && ctx.includes('1 : 10'),
+      'wiki excerpt not embedded'
+    );
+  });
+
+  test('safe prompt without risky keywords: no prevention block', () => {
+    resetTmp();
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({ effort: 'high' }));
+    const r = runHook('user-prompt-submit', {
+      session_id: 'safe-1',
+      prompt: 'rename the button component',
+    });
+    const ctx = r.parsed.hookSpecificOutput?.additionalContext || '';
+    assert.ok(!ctx.includes('[ExoVibe prevention]'));
+  });
+
+  test('#wiki tag reminder explicitly says SILENTLY (no yes/no)', () => {
+    resetTmp();
+    const r = runHook('user-prompt-submit', {
+      session_id: 'silent-1',
+      prompt: 'this was a great fix #wiki',
+    });
+    const ctx = r.parsed.hookSpecificOutput.additionalContext;
+    assert.ok(ctx.includes('SILENTLY'), 'silent reminder missing: ' + ctx);
+    assert.ok(/do NOT ask/.test(ctx));
+  });
+});
+
+suite('PostToolUse hook — v0.5 error→wiki preventive surface', () => {
+  test('1st error occurrence with strong wiki match: excerpt is surfaced', () => {
+    resetTmp();
+    writeFixturePage('antipatterns', 'fetch-undefined', {
+      slug: 'fetch-undefined',
+      severity: 'high',
+    }, '## Context\nTypeError Cannot read property map undefined property typeof common React rendering');
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({
+      effort: 'high',
+    }));
+
+    const r = runHook('post-tool-use', {
+      session_id: 'err-match-1',
+      tool_name: 'Bash',
+      tool_response: {
+        stderr: "TypeError: Cannot read property 'map' of undefined typeof property React rendering common at line 42",
+      },
+    });
+    const ctx = r.parsed.hookSpecificOutput?.additionalContext || '';
+    assert.ok(ctx.includes('Past lesson'), 'wiki surface missing: ' + ctx.slice(0, 300));
+    assert.ok(ctx.includes('fetch-undefined'));
+  });
+
+  test('1st occurrence with no wiki match: pass-through (no signal)', () => {
+    resetTmp();
+    fs.writeFileSync(path.join(TMP_ROOT, 'config.json'), JSON.stringify({ effort: 'mid' }));
+    const r = runHook('post-tool-use', {
+      session_id: 'err-nomatch-1',
+      tool_name: 'Bash',
+      tool_response: { stderr: 'totally unique never seen before xyzzy 12345' },
+    });
+    assert.ok(!r.parsed.hookSpecificOutput, 'spurious signal: ' + JSON.stringify(r.parsed));
+  });
+});
+
+// ========================================================================
 // Result summary
 // ========================================================================
 console.log('\n' + '='.repeat(60));

@@ -3,6 +3,86 @@
 All notable changes to the ExoVibe plugin. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] — 2026-05-03
+
+### Added — Prevention layer (the missing piece)
+
+The original v0.4.x design captured lessons well but did not actually surface
+them at the right moment. v0.5 closes that gap with deterministic, hook-time
+relevance matching. No external API. No vector DB. Pure Node stdlib.
+
+- **`hooks/lib/wiki-match.js`** — new shared module that:
+  - parses each wiki page's frontmatter (`stack:`, `tags:`, `severity:`,
+    `env-scope:`, `triggers:`),
+  - detects the cwd's stack from `package.json` / `Cargo.toml` / `go.mod` /
+    `requirements.txt` / `pubspec.yaml`,
+  - scores pages by stack overlap, error-message keyword overlap, and
+    risky-prompt keyword overlap,
+  - excerpts top-N pages within a per-call character budget.
+- **SessionStart hook — stack-aware injection.** Reads cwd manifests, finds
+  wiki pages whose `stack:` overlaps, and embeds 2–3 page bodies (excerpted)
+  alongside the index. The LLM no longer has to "decide which page to read";
+  the relevant pages are already in the message.
+- **PostToolUse hook — error-to-wiki matching.** On every `stderr` capture,
+  the error message is keyword-matched against archived wiki Context sections.
+  Strong matches (3+ keyword hits) surface the wiki excerpt on the FIRST
+  occurrence, not the 4th. Per-session dedup avoids spam.
+- **UserPromptSubmit hook — risky-keyword detection.** A small dictionary of
+  historically-dangerous tokens (`max:`, `pool`, `migration`, `--force`,
+  `prod`, `delete from`, `rm -rf`, etc.) is combined with the cwd stack tags;
+  matches surface preventive wiki excerpts BEFORE the LLM commits to a course
+  of action. This is the "warns you before you repeat the mistake" promise,
+  finally implemented.
+- **UserPromptSubmit — negative-feedback now triggers BOTH ingest and query.**
+  Previously v0.4.x only signaled ingest after a failure. v0.5 also signals
+  `/exovibe-query` to look up whether the failure mode is already archived,
+  letting the user benefit from prior lessons during a debug round, not just
+  after it.
+- **SessionStart — lint recommendation.** When the wiki has crossed any of
+  three thresholds (≥30 pages and never linted; ≥10 ingests since last lint;
+  ≥14 days and ≥20 pages), a non-nag reminder asks the LLM to surface
+  `/exovibe-lint` on the next natural break — not mid-task.
+
+### Added — Skill behavior
+
+- **`exovibe-ingest` Rule 6 — pre-authorized triggers.** Automatic triggers
+  (`#wiki` / `!save` / `!archive` tag, error-loop, negative-feedback,
+  PreCompact) are now archived SILENTLY. The skill no longer asks the user
+  yes/no, no longer asks to confirm slug or category. The ONLY allowed
+  prompt is Step 1a (first-run language). This fixes the "terminal hangs
+  waiting for confirmation" UX bug reported by users.
+- **`exovibe-ingest` Step 5b — auto-extract `triggers:` and `env-scope:`.**
+  Each new wiki page now carries 3–7 trigger keywords (matched by hooks for
+  future surfacing) and an explicit env scope (`prod` / `dev` / `both`).
+  Replaces the implicit "every rule applies everywhere" assumption that led
+  to dev-vs-prod misapplication of pool-size lessons.
+- **`exovibe-query` Step 2 — cwd stack auto-filter.** Query now reads cwd
+  manifests automatically and 2× weights pages whose `stack:` overlaps,
+  without the user having to specify the stack in the query string.
+
+### Changed — Hook reminder text strength
+
+All three automatic-trigger reminders now explicitly say "archive SILENTLY,
+do NOT ask the user yes/no". This addresses the LLM's instinctive habit of
+adding a confirmation step even when the trigger is already pre-authorized.
+
+### Changed — Marketing honesty
+
+- README and `marketing/pitch.txt` updated to remove "you never repeat the
+  same mistake twice" and "warns you before you repeat the mistake" — these
+  were stronger than the system can guarantee, since LLM overconfidence can
+  still ignore a surfaced lesson. New language: "drastically cuts how often
+  the same bug ships twice", "Prevention is best-effort, not guaranteed".
+- README "≤ 4,500 chars" claim replaced with the accurate per-effort
+  breakdown (Low ≤500, Mid ≤4,500, High ≤9,000).
+
+### Notes
+
+- LLM compliance with surfaced lessons is not enforced. The system maximizes
+  recall (the right page IS in context); compliance is best-effort.
+- Risky-keyword dictionary is intentionally small to start. Add domain terms
+  to `RISKY_KEYWORDS` in `hooks/lib/wiki-match.js` for project-specific tuning.
+
 ## [0.4.1] — 2026-04-20
 
 ### Fixed

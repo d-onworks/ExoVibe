@@ -5,8 +5,10 @@
 > Claude-native. Zero API keys. Zero external DBs. Just markdown that compounds.
 
 **ExoVibe** is a Claude Code plugin that captures every meaningful lesson from your
-coding sessions as plain markdown, then auto-injects the relevant ones into your next
-session — so Claude *already knows* you've hit this bug before, before you even ask.
+coding sessions as plain markdown, then surfaces the ones that match your current
+project's stack, error messages, and risky-prompt keywords — so Claude *already has
+the relevant past lesson in context* the moment you start typing, without you having
+to remember which page applies.
 
 Built for AI-native vibe coders who ship fast but keep tripping on the same walls:
 hallucinated packages, mixed libraries, 500-line files, silent error-swallowing,
@@ -19,8 +21,10 @@ the React useEffect infinite loop you swear you fixed last month.
 ![Day 1 you save a lesson. Day 21 Claude recalls it for you.](docs/images/claude-remembers.png)
 
 > **You forget. Claude doesn't.**
-> Type `#wiki` once → 3 weeks later in a *different project*, Claude pulls the same
-> lesson into context automatically and warns you before you repeat the mistake.
+> Type `#wiki` once → 3 weeks later in a *different project*, ExoVibe matches the
+> lesson by stack tag, risky keyword, or error fingerprint and surfaces it into
+> Claude's context. Prevention is best-effort — LLM overconfidence can still ignore
+> a surfaced lesson, but most of the time the surfaced excerpt is enough.
 
 That's the whole product. Everything else is plumbing to make this feel inevitable.
 
@@ -128,9 +132,16 @@ Release notes for every version live in [CHANGELOG.md](CHANGELOG.md).
 - **Rollback signals**: `git reset --hard` → flags what went wrong
 - **Success signals**: Tests pass + commit → extracts the winning pattern
 
-### Closes the learning loop
-- Next `SessionStart` → relevant lessons auto-injected into Claude's context (native 10K channel)
-- Claude *already knows* you've seen this bug before — before you even ask
+### Closes the learning loop (v0.5: deterministic relevance, not just index dump)
+- **SessionStart** → cwd manifest is parsed (`package.json` etc.), wiki pages with
+  matching `stack:` tags are loaded in body, not just title
+- **PostToolUse** → stderr is keyword-matched against archived Context sections;
+  matching wiki excerpts surface on the FIRST occurrence, not the 4th
+- **UserPromptSubmit** → risky keywords (`max:`, `migration`, `--force`, `prod`,
+  `delete`, etc.) combined with cwd stack pull preventive lesson excerpts BEFORE
+  any code is written
+- **Caveat** — surfaced ≠ guaranteed applied. LLMs can still ignore a loaded lesson;
+  ExoVibe maximizes the chance of recall, not the certainty of compliance.
 
 ### Stays out of your way
 - Everything is plain markdown in `~/.claude/exovibe/`
@@ -271,8 +282,10 @@ Unlike tools that assume one size fits all, **ExoVibe grows as you grow**.
 ## Plays well with
 
 ExoVibe is designed to coexist with other popular Claude Code plugins.
-We respect the 10K `additionalContext` budget (we use ≤ 4,500 chars so
-others get their turn) and all file I/O stays inside `~/.claude/exovibe/`.
+We respect the 10K `additionalContext` budget — Low effort uses ≤ 500 chars,
+Mid uses ≤ 4,500 chars, High uses ≤ 9,000 chars. Pick your effort level
+to match how much room you want to leave for other plugins. All file I/O
+stays inside `~/.claude/exovibe/`.
 
 | Plugin | Relationship | Notes |
 |--------|-------------|-------|
@@ -335,7 +348,7 @@ Not affiliated with Obsidian. We just happen to speak the same format.
 
 ## Philosophy
 
-> *"Vibe coders ship fast. ExoVibe makes sure they don't ship the same bug twice."*
+> *"Vibe coders ship fast. ExoVibe drastically cuts how often the same bug ships twice."*
 
 Three beliefs:
 1. **Memory is more valuable than intelligence.** Claude is already smart. What it

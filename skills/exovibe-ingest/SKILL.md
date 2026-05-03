@@ -118,6 +118,8 @@ category: <category>
 tags: [...]
 stack: [...]
 severity: low | medium | high | critical
+env-scope: prod | dev | both
+triggers: [keyword1, keyword2, ...]
 created: <today>
 updated: <today>
 provenance:
@@ -234,3 +236,38 @@ Rules for this step:
 3. **Resolution must be copy-pasteable** — no "do something like X"
 4. **If the raw transcript is missing**, say so in provenance and continue with conversation context
 5. **If the user is mid-task**, archive fast and return to them — no interruption
+6. **Automatic and explicit triggers are pre-authorized**. When invoked because the
+   user wrote `#wiki` / `!save` / `!archive`, OR because a hook signaled an
+   error-loop / negative-feedback / PreCompact event: archive WITHOUT asking the
+   user any yes/no confirmation. Do NOT ask "should I save this?", "what slug
+   should I use?", or "which category fits?". Decide silently using the rules in
+   Steps 3–4 and report a single-line outcome in Step 7. The ONLY exception is
+   Step 1a (first-run language selection when `user_language` is `null`) — no
+   other prompt is allowed.
+
+## Step 5b — Auto-Extract Triggers and Env Scope (v0.5)
+
+Before writing the page, derive two extra frontmatter fields that boost
+deterministic prevention later:
+
+- **`triggers:`** — 3 to 7 short keyword strings the user is likely to write
+  in a future prompt that should pull this lesson back into context. Mix
+  symptom words (`pool`, `max:1`, `connection refused`), command/flag tokens
+  (`migrate`, `--force`, `git reset`), and stack-specific identifiers
+  (`drizzle`, `next dev`). Keep each token under 20 chars. These are matched
+  case-insensitively.
+- **`env-scope:`** — exactly one of `prod`, `dev`, `both`. Use `prod` if the
+  lesson only matters in production environments (deploy configs, scaled
+  pools, real traffic). Use `dev` if it only matters during local
+  development (HMR, watch mode, local DB). Use `both` if the lesson is
+  environment-agnostic (most antipatterns).
+
+Add both fields to the frontmatter block emitted in Step 5:
+
+```yaml
+triggers: [keyword1, keyword2, ...]
+env-scope: both
+```
+
+These are read by the SessionStart and UserPromptSubmit hooks for
+keyword-based wiki surfacing.
