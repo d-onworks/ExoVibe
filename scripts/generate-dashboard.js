@@ -123,8 +123,9 @@ function collect() {
       const updated = fm.updated || '';
       const created = fm.created || '';
       const tags = Array.isArray(fm.tags) ? fm.tags : (fm.tags ? [fm.tags] : []);
+      const stack = Array.isArray(fm.stack) ? fm.stack : (fm.stack ? [fm.stack] : []);
       const links = extractWikilinks(content);
-      pages.push({ slug, title, category, updated, created, tags, links, path: filePath });
+      pages.push({ slug, title, category, updated, created, tags, stack, links, path: filePath });
       counts[category] = (counts[category] || 0) + 1;
     }
   }
@@ -142,23 +143,27 @@ function collect() {
   }
   pages.forEach(p => { p.degree = degree[p.slug] || 0; });
 
-  // Aggregate by tag (for stack clustering + the by-stack panel)
-  const tagCounts = {};
-  const tagToCategory = {};  // tag → most common category (representative color)
+  // Aggregate by tech stack (frontmatter `stack:`, NOT `tags:`).
+  // The free-form `tags:` field is intentionally not surfaced as a panel —
+  // detailed exploration belongs in Obsidian (tag pane, property search).
+  const STACK_TOP_N = 15;
+  const stackCounts = {};
+  const stackToCategory = {};
   for (const p of pages) {
-    for (const tag of p.tags) {
-      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-      tagToCategory[tag] = tagToCategory[tag] || {};
-      tagToCategory[tag][p.category] = (tagToCategory[tag][p.category] || 0) + 1;
+    for (const s of p.stack) {
+      stackCounts[s] = (stackCounts[s] || 0) + 1;
+      stackToCategory[s] = stackToCategory[s] || {};
+      stackToCategory[s][p.category] = (stackToCategory[s][p.category] || 0) + 1;
     }
   }
-  const topTags = Object.entries(tagCounts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([tag, n]) => {
-      const catCounts = tagToCategory[tag];
-      const dominantCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0][0];
-      return { tag, count: n, color: CATEGORY_COLORS[dominantCat] || '#64748b' };
-    });
+  const allStacks = Object.entries(stackCounts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const topStacks = allStacks.slice(0, STACK_TOP_N).map(([stack, n]) => {
+    const catCounts = stackToCategory[stack];
+    const dominantCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0][0];
+    return { stack, count: n, color: CATEGORY_COLORS[dominantCat] || '#64748b' };
+  });
+  const stackOverflow = Math.max(0, allStacks.length - STACK_TOP_N);
 
   // Parse recent entries from log.md
   const logRaw = safeRead(LOG_PATH);
@@ -185,7 +190,8 @@ function collect() {
     errorLoopsCaught,
     hallucBlocked,
     config,
-    topTags,
+    topStacks,
+    stackOverflow,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -349,6 +355,15 @@ function renderHtml(data) {
   .stack-cloud .tag:hover { background: rgba(255,255,255,0.08); }
   .stack-cloud .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
   .stack-cloud .tag .n { color: var(--muted); font-weight: 600; }
+  .hint {
+    margin-top: 12px; padding: 10px 12px; border-radius: 6px;
+    background: rgba(96,165,250,0.06); border: 1px solid rgba(96,165,250,0.18);
+    color: var(--muted); font-size: 12px;
+  }
+  .hint code {
+    background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace; color: var(--text);
+  }
   /* SVG graph labels — only bold on hover */
   #graph-svg .node-label { fill: var(--muted); font-size: 10px;
     font-family: 'SF Mono', Monaco, Consolas, monospace; pointer-events: none; }
@@ -406,16 +421,20 @@ function renderHtml(data) {
   </section>
 
   <section>
-    <h2>By Stack</h2>
+    <h2>By Tech Stack ${data.topStacks.length > 0 ? `<span style="color:var(--muted);text-transform:none;letter-spacing:normal;font-weight:400;">— top ${data.topStacks.length}${data.stackOverflow > 0 ? ` of ${data.topStacks.length + data.stackOverflow}` : ''}</span>` : ''}</h2>
     <div class="panel">
-      ${data.topTags.length === 0
-        ? '<div class="empty">No stack tags yet.</div>'
-        : `<div class="stack-cloud">${data.topTags.map(t => `
-            <span class="tag" title="${esc(t.count)} lessons related to ${esc(t.tag)}">
+      ${data.topStacks.length === 0
+        ? '<div class="empty">No <code>stack:</code> values found in frontmatter yet.</div>'
+        : `<div class="stack-cloud">${data.topStacks.map(t => `
+            <span class="tag" title="${esc(t.count)} lessons in stack ${esc(t.stack)}">
               <span class="dot" style="background:${t.color}"></span>
-              <span>${esc(t.tag)}</span>
+              <span>${esc(t.stack)}</span>
               <span class="n">${t.count}</span>
-            </span>`).join('')}</div>`
+            </span>`).join('')}${data.stackOverflow > 0 ? `<span class="tag" style="opacity:0.6"><span>+${data.stackOverflow} more</span></span>` : ''}</div>
+          <div class="hint">
+            Looking for tag-level filtering, property search, or full-text? Open the same vault in Obsidian:
+            <code>/exovibe-view vault</code>
+          </div>`
       }
     </div>
   </section>

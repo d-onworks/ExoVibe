@@ -3,6 +3,39 @@
 All notable changes to the ExoVibe plugin. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.1] — 2026-05-04
+
+### Fixed — Dashboard "By Stack" panel was reading the wrong field
+
+The panel was labeled "By Stack" but aggregated `tags:` (free-form concept
+tags, often 1-count) instead of `stack:` (technology stacks). With ~36 pages
+this surfaced 100+ tag chips, mostly count=1 — visually noisy and not
+actually grouped by anything meaningful.
+
+- `scripts/generate-dashboard.js` now reads `fm.stack` from each page's
+  frontmatter and aggregates separately. Top 15 stacks are shown with a
+  "+N more" overflow indicator. Heading reads "By Tech Stack — top 15 of N".
+- The panel is intentionally not paired with a tag panel. Free-form tag
+  exploration belongs in Obsidian (tag pane, property search, full-text);
+  duplicating it in the dashboard would be half-baked at best.
+
+### Changed — Dashboard repositioned as glance-first
+
+- New inline hint inside the stack panel: *"Looking for tag-level filtering,
+  property search, or full-text? Open the same vault in Obsidian:
+  `/exovibe-view vault`"*. The two modes are now complementary, not
+  competing.
+- README modes table reframed: dashboard = "at-a-glance overview", vault =
+  "serious exploration", with explicit guidance that wanting filters inside
+  the dashboard is the cue to open the vault instead.
+
+### Notes
+
+- Existing wiki pages already populate `stack:` correctly — no migration
+  needed. Pages that omit `stack:` simply don't appear in the panel.
+- No new tests required: dashboard rendering has no unit tests (the data
+  collection is verified by the visible output of `node scripts/generate-dashboard.js`).
+
 ## [0.5.0] — 2026-05-03
 
 ### Added — Prevention layer (the missing piece)

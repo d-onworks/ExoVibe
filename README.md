@@ -58,11 +58,16 @@ HTML file. Works offline. Works in any browser made this decade.
 
 Open it three ways depending on what you want:
 
-| Command | Opens | Install needed |
-|---------|-------|----------------|
-| `/exovibe-view` *(or `dashboard`)* | Single-file HTML dashboard in your browser | None |
-| `/exovibe-view vault` | `~/.claude/exovibe/` as an Obsidian Vault | [Obsidian](https://obsidian.md) (free) |
-| `/exovibe-view graph` | Obsidian + graph view focus | Obsidian |
+| Command | Best for | Install needed |
+|---------|----------|----------------|
+| `/exovibe-view` *(or `dashboard`)* | **At-a-glance overview** — totals, recent lessons, top tech stacks, knowledge graph preview | None |
+| `/exovibe-view vault` | **Serious exploration** — tag pane, full-text search, frontmatter property filtering, backlinks | [Obsidian](https://obsidian.md) (free) |
+| `/exovibe-view graph` | Same as vault, opens directly on the graph view | Obsidian |
+
+The two modes are complementary, not competitive. The dashboard answers
+"*what's in here?*" in one screen. The vault answers "*find every lesson where
+`stack:` includes supabase AND `severity:` is critical*". If you find yourself
+wanting filters or search inside the dashboard, that's the cue to open the vault.
 
 The dashboard regenerates on every call — always fresh, deterministic, **offline**
 (no CDN, no network). The Vault preset (dark theme, category-colored graph) installs

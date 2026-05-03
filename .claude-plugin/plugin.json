@@ -1,6 +1,6 @@
 {
   "name": "exovibe",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "The Cognitive Exoskeleton for Vibe Coders — Claude-native knowledge archive that captures every anti-pattern and lesson as plain markdown, then auto-injects them into your next session. Zero API keys. Zero external DBs.",
   "author": {
     "name": "d-onworks",
