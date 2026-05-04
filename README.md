@@ -125,6 +125,16 @@ export FORCE_AUTOUPDATE_PLUGINS=1
 /reload-plugins
 ```
 
+**Still seeing old behavior after an update?** Plugins are loaded from a
+versioned cache directory (`~/.claude/plugins/cache/.../<version>/`). If the
+cache pointer didn't move, the old version keeps running. Force a clean
+reinstall:
+
+```
+/plugin uninstall exovibe
+/plugin install exovibe@exovibe-marketplace
+```
+
 Release notes for every version live in [CHANGELOG.md](CHANGELOG.md).
 
 ---

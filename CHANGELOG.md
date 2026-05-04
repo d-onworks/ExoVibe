@@ -3,6 +3,37 @@
 All notable changes to the ExoVibe plugin. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.2] — 2026-05-04
+
+### Fixed — Prevention layer was blind to its own most-frequent failure mode
+
+Two consecutive sessions hit the same trap: source pushed → wiki page
+[[plugin-cache-stale-after-source-fix]] cited reactively after the user saw
+old behavior, instead of preemptively before they hit it. The wiki page
+existed but the prevention layer had no trigger to surface it.
+
+- `hooks/lib/wiki-match.js` — `RISKY_KEYWORDS` extended with plugin-source
+  /distribution-layer terms: `git push`, `git pull`, `plugin install`,
+  `plugin uninstall`, `/plugin`, `marketplace`, `version bump`,
+  `bump version`, plus Korean equivalents (`글로벌 사용자`, `글로벌 푸쉬`,
+  `재배포`). When any of these appear in a user prompt and a matching wiki
+  page exists, its body is now surfaced *before* the AI commits to a push
+  flow, not after the user reports stale cache.
+- `README.md` — install section now has explicit *"Still seeing old behavior
+  after an update?"* fallback with the deterministic uninstall + install
+  cycle. This way users self-recover without needing the AI to walk them
+  through it every time.
+
+### Notes
+
+- The wiki page itself (`~/.claude/exovibe/wiki/antipatterns/plugin-cache-stale-after-source-fix.md`)
+  is per-user and lives outside the repo. v0.5.2 ships the *triggers* that
+  let the page be surfaced reliably; users who don't yet have the page get
+  the README guidance instead.
+- This release is the meta-fix for v0.5.0–v0.5.1's recurrence: knowing about
+  an antipattern is not the same as preventing it. The wiki entry has to be
+  paired with an automated trigger or it stays a postmortem document.
+
 ## [0.5.1] — 2026-05-04
 
 ### Fixed — Dashboard "By Stack" panel was reading the wrong field

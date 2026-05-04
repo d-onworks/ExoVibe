@@ -318,6 +318,14 @@ const RISKY_KEYWORDS = [
   'reset --hard', 'rebase',
   'rm -rf',
   'session token', 'secret', 'api key',
+  // Plugin/distribution layer — adding source-push triggers so the prevention
+  // layer surfaces cache-invalidation lessons BEFORE the user repeats the trap
+  // (see [[plugin-cache-stale-after-source-fix]]).
+  'git push', 'git pull',
+  'plugin install', 'plugin uninstall', '/plugin',
+  'marketplace',
+  'version bump', 'bump version',
+  '글로벌 사용자', '글로벌 푸쉬', '재배포',
 ];
 
 function detectRiskyKeywords(text) {
